@@ -38,6 +38,7 @@
 
         <div class="court-wrap">
           <canvas id="court" width="960" height="680" aria-label="Basketball court passion map"></canvas>
+          <div id="replay-caption" class="replay-caption" hidden></div>
           <div class="court-legend" aria-hidden="true">
             <span><i class="legend-dot fire"></i> Fire</span>
             <span><i class="legend-dot joy"></i> Joy</span>
@@ -51,8 +52,13 @@
           <div>
             <h2 id="profile-title">Tonight's profile</h2>
             <p id="profile-text">Log a moment to see whether tonight is rivalry heat, devotion, joy, respect, or pressure.</p>
+            <ul id="profile-receipts" class="receipts" aria-label="Evidence behind the profile"></ul>
           </div>
-          <button id="copy-summary" class="text-button" type="button">Copy summary</button>
+          <div class="profile-actions">
+            <button id="replay-button" class="text-button" type="button">Replay the night</button>
+            <button id="card-button" class="text-button" type="button">Film room card</button>
+            <button id="copy-summary" class="text-button" type="button">Copy summary</button>
+          </div>
         </section>
       </div>
 

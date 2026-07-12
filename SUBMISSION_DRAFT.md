@@ -1,5 +1,5 @@
 ---
-title: Clutch Ledger: A Passion Tracker for the Games You Cannot Watch Casually
+title: "Clutch Ledger: The Box Score Never Says Why the Game Mattered"
 published: false
 tags: devchallenge, weekendchallenge, javascript, webdev
 ---
@@ -8,47 +8,57 @@ tags: devchallenge, weekendchallenge, javascript, webdev
 
 ## What I Built
 
-Clutch Ledger is a basketball passion tracker. It is for the games, rivalries, pickup runs, and coaching moments you cannot watch casually.
+Every sports app tracks the score. None of them track the reason you were on your feet in your living room over a regular season game.
 
-You log a moment with:
+Clutch Ledger is a basketball passion tracker. You log the moments that made a game personal: the matchup, your side, the push (the opponent, or whatever was pressing on you), what drove the moment (fire, joy, pride, nerves, or respect), the moment itself, and how hard it hit (intensity and stakes). The app plots every moment on a live court, scores the night, and reads your passion profile back to you.
 
-- the matchup or passion lane
-- your side and the opponent/push
-- what drove the moment: fire, joy, pride, nerves, or respect
-- the actual moment
-- intensity and stakes
+Here is the part I actually care about: **the profile has to show its receipts.**
 
-The app turns those entries into a live court visualization, a passion score, and a profile for the night.
+Plenty of apps will hand you a label like "you're a superfan!" from nothing. Clutch Ledger only claims a profile it can back with your own entries, and it shows the evidence right under the claim:
+
+> **Rivalry Heat** — The opponent is the fuel. The moments that move you are the ones where the push has a name and every possession feels personal.
+> - Fire drove 4 of 6 moments.
+> - Average intensity 8.2/10, average stakes 7.5/10.
+> - A named push shows up in 5 of 6 moments. The opponent is part of why it matters.
+
+The profile is computed from the pattern of the ledger, not from a single score threshold. If no emotion dominates your night, it tells you that too, instead of forcing you into a box.
 
 ## Demo
 
 Demo: https://dev-weekend-passion-clutch-ledger.vercel.app
 
-Open the app, press the plus button to load sample moments, or log your own game moment. The court updates immediately. The ledger stays local in the browser through localStorage.
+Try it in this order:
+
+1. Press the **+** button to load sample moments and watch the court light up.
+2. Read **Tonight's profile** and the receipts under it.
+3. Hit **Replay the night** — the app walks back through your moments in order, spotlighting each one on the court with the story of why it mattered.
+4. Hit **Film room card** — it renders a shareable PNG card of your night (profile, score, emotion breakdown, top moment) straight from the ledger, entirely in your browser.
+
+Then clear it and log a real one. Your data never leaves the page: everything lives in localStorage, there is no backend, no account, no tracking.
 
 ## Code
 
 Repo: TODO
 
-The app is intentionally small: HTML, CSS, and vanilla JavaScript. No build step and no external dependencies.
-
 ## How I Built It
 
-I wanted the app to feel like a tool a fan, player, or coach could actually use during a heated night, not a landing page about passion. The first screen is the working interface: court, score, profile, and the log form.
+Vanilla HTML, CSS, and JavaScript. No framework, no build step, no dependencies, no API keys. I wanted the whole thing to be inspectable in three files.
 
-The core mechanic is simple:
+The pieces:
 
-1. Each logged moment gets a score from intensity, stakes, and the chosen emotion.
-2. The average moment score becomes the overall Passion Score.
-3. The score maps to a profile such as Rivalry Heat, Team Devotion, Game Joy, or Obsession Mode.
-4. Every moment is plotted on a canvas court with a color tied to its emotional driver.
+- **The court** is a single `<canvas>` render loop. Every logged moment gets a deterministic position and a pulse, colored by its emotional driver. During replay, the court dims everything except the active moment and draws the path of the night behind it.
+- **The scoring** is simple on purpose: intensity and stakes are weighted, then adjusted by the emotion driving the moment (fire burns hotter than respect). Simple also means auditable — you can read the whole formula in `app.js` in under a minute.
+- **The profile engine** counts what actually happened in your ledger: which emotion dominated, how heavy the average night was, whether your biggest moments had a named opponent. Each profile ships with the evidence lines that justify it. A profile the app can't back with your data is a profile it doesn't get to claim.
+- **The film room card** is rendered fresh from the ledger every time by an offscreen canvas, so the shareable artifact can never disagree with the data behind it.
 
-The data never leaves the browser. Entries are stored in localStorage, and the export button gives the user raw JSON if they want to keep or share their ledger.
+Honest limits, because a weekend build should say them: the scoring weights are heuristics, not science. Five emotions is a small vocabulary for what a rivalry game actually does to a person. And the ledger lives in one browser — there's no sync. Those are v2 problems.
 
 ## Prize Categories
 
-No prize category technology was used. This submission is for the overall Weekend Challenge.
+No prize category technology was used. This is an entry for the overall Weekend Challenge.
 
 ## Why This Fits the Theme
 
-The prompt asked for something inspired by passion: rivalry, team spirit, devotion, hobbies, and the things people love enough to track. Basketball is that for me. Clutch Ledger turns that feeling into a small usable tool: not just "I love this team," but the exact possession, opponent, pressure, and emotion that made the game matter.
+The prompt asked for something inspired by passion: rivalry, team spirit, obsession, the things you can't engage with casually. Basketball is that for me — playing it, watching it, arguing about it. What I've never had is a record of *why* a specific night mattered, and the box score has never once explained it.
+
+Clutch Ledger is my answer: not "I love this team," but the exact possession, the exact push, the exact pressure that made the game personal — written down, scored, and read back to me with receipts.

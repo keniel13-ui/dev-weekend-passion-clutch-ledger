@@ -202,10 +202,68 @@ h2 {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.profile-band {
+  align-items: flex-start;
+}
+
 .profile-band p {
   margin: 6px 0 0;
   color: var(--muted);
   line-height: 1.45;
+}
+
+.receipts {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.receipts li {
+  position: relative;
+  padding-left: 16px;
+  color: var(--text);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.receipts li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+.profile-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.replay-caption {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(13, 15, 17, 0.82);
+  backdrop-filter: blur(10px);
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.replay-caption strong {
+  display: block;
+  color: var(--gold);
+  margin-bottom: 4px;
 }
 
 .control-panel {
@@ -430,6 +488,7 @@ input[type="range"] {
   }
 
   .profile-band,
+  .profile-actions,
   .button-row {
     align-items: stretch;
     flex-direction: column;

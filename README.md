@@ -10,7 +10,9 @@ Live demo: https://dev-weekend-passion-clutch-ledger.vercel.app
 
 - Log a matchup, side, opponent, moment, emotion, intensity, and stakes.
 - See each entry plotted on an animated basketball court.
-- Compute a passion score and profile from the logged moments.
+- Passion profile with receipts: the profile is computed from the pattern of entries (dominant emotion, average intensity/stakes, named opponents) and shows the evidence lines that justify it.
+- Replay the night: steps back through the moments chronologically, spotlighting each one on the court with its story.
+- Film room card: renders a shareable PNG card (profile, score, emotion breakdown, top moment) from the ledger, entirely in the browser.
 - Copy a shareable summary or export the raw JSON.
 - Fully client-side. Data stays in browser localStorage.
 
