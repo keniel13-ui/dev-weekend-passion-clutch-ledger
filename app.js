@@ -1,222 +1,62 @@
-const STORAGE_KEY = "clutch-ledger-moments-v1";
+const STORAGE_KEY = "clutch-receipts-v1";
 
-const colors = {
-  fire: "#ff4d5a",
-  joy: "#f2b84b",
-  pride: "#4ba3ff",
-  nerves: "#9f7aea",
-  respect: "#3ccf91"
+const resultLabels = {
+  pending: "Pending",
+  cashed: "Cashed",
+  "half-right": "Half-right",
+  missed: "Missed",
+  cope: "Shameless cope"
 };
 
-const emotionLabels = {
-  fire: "Fire",
-  joy: "Joy",
-  pride: "Pride",
-  nerves: "Nerves",
-  respect: "Respect"
+const resultColors = {
+  cashed: "#3ccf91",
+  "half-right": "#f2b84b",
+  missed: "#ff4d5a",
+  cope: "#9f7aea",
+  pending: "#4ba3ff"
 };
 
-const profileDefs = {
-  obsession: { label: "Obsession Mode", text: "High stakes and high heat on almost every entry. This is the kind of passion that changes how you sit in the chair." },
-  fire: { label: "Rivalry Heat", text: "The opponent is the fuel. The moments that move you are the ones where the push has a name and every possession feels personal." },
-  nerves: { label: "Pressure Junkie", text: "You care most when the outcome is unsettled. The nerves are not a problem, they are the receipt that the game matters." },
-  pride: { label: "Coach's Pride", text: "Your biggest moments are someone else doing it right. The win you track is growth you can point at." },
-  respect: { label: "Respect Mode", text: "You log the opponent's best plays too. The game matters to you as a craft, not just a result." },
-  joy: { label: "Game Joy", text: "The love shows up without needing pressure. This is the clean reason people come back to a game." },
-  devotion: { label: "Team Devotion", text: "No single emotion owns your ledger. You show up for all of it, which is what steady loyalty looks like." },
-  empty: { label: "No entries", text: "Log a moment to see whether tonight is rivalry heat, devotion, joy, respect, or pressure." }
-};
+const state = loadState();
 
-const sampleMoments = [
-  {
-    matchup: "Celtics vs Lakers",
-    side: "Celtics",
-    opponent: "Lakers",
-    emotion: "fire",
-    moment: "The late defensive stop felt better than a highlight. It was the rivalry showing its teeth.",
-    intensity: 9,
-    stakes: 8,
-    createdAt: new Date(Date.now() - 1000 * 60 * 33).toISOString()
-  },
-  {
-    matchup: "Sunday pickup run",
-    side: "My squad",
-    opponent: "The old heads",
-    emotion: "respect",
-    moment: "They kept punishing every lazy closeout. Annoying, but it made the game honest.",
-    intensity: 7,
-    stakes: 5,
-    createdAt: new Date(Date.now() - 1000 * 60 * 18).toISOString()
-  },
-  {
-    matchup: "Coaching night",
-    side: "The kids",
-    opponent: "Pressure",
-    emotion: "pride",
-    moment: "One player made the extra pass without being reminded. That was the win.",
-    intensity: 8,
-    stakes: 7,
-    createdAt: new Date(Date.now() - 1000 * 60 * 4).toISOString()
-  }
-];
-
-const form = document.querySelector("#moment-form");
-const entriesEl = document.querySelector("#entries");
+const gameForm = document.querySelector("#game-form");
+const takeForm = document.querySelector("#take-form");
+const modelForm = document.querySelector("#model-form");
+const takeList = document.querySelector("#take-list");
+const modelList = document.querySelector("#model-list");
 const emptyState = document.querySelector("#empty-state");
-const passionScoreEl = document.querySelector("#passion-score");
-const heatLabelEl = document.querySelector("#heat-label");
-const countEl = document.querySelector("#moment-count");
-const profileTextEl = document.querySelector("#profile-text");
-const profileReceiptsEl = document.querySelector("#profile-receipts");
-const intensityEl = document.querySelector("#intensity");
-const stakesEl = document.querySelector("#stakes");
-const intensityValue = document.querySelector("#intensity-value");
-const stakesValue = document.querySelector("#stakes-value");
-const replayButton = document.querySelector("#replay-button");
-const replayCaption = document.querySelector("#replay-caption");
+const takeCountEl = document.querySelector("#take-count");
+const hitRateEl = document.querySelector("#hit-rate");
+const modelCountEl = document.querySelector("#model-count");
+const receiptTextEl = document.querySelector("#receipt-text");
+const receiptLinesEl = document.querySelector("#receipt-lines");
+const teamAInput = document.querySelector("#team-a");
+const teamBInput = document.querySelector("#team-b");
+const teamALabel = document.querySelector("#team-a-label");
+const teamBLabel = document.querySelector("#team-b-label");
 const canvas = document.querySelector("#court");
 const ctx = canvas.getContext("2d");
 
-let moments = loadMoments();
 let pulse = 0;
-let replay = null;
 
-function loadMoments() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    return Array.isArray(stored) ? stored : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveMoments() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(moments));
-}
-
-function emotionWeight(emotion) {
+function defaultState() {
   return {
-    fire: 1.2,
-    nerves: 1.12,
-    pride: 1.05,
-    joy: 0.95,
-    respect: 0.9
-  }[emotion] || 1;
+    game: { teamA: "Celtics", teamB: "Lakers" },
+    takes: [],
+    quarters: [],
+    modelCalls: []
+  };
 }
 
-function scoreMoment(moment) {
-  const base = (Number(moment.intensity) * 6) + (Number(moment.stakes) * 4);
-  return Math.min(100, Math.round(base * emotionWeight(moment.emotion)));
-}
-
-function computeScore() {
-  if (!moments.length) return 0;
-  const total = moments.reduce((sum, moment) => sum + scoreMoment(moment), 0);
-  return Math.round(total / moments.length);
-}
-
-// The profile is earned from the pattern of entries, and every profile ships
-// with its receipts: the evidence lines that justify the read. A profile the
-// app cannot back with the ledger is a profile it does not get to claim.
-function analyzeLedger() {
-  if (!moments.length) {
-    return { score: 0, profile: profileDefs.empty, receipts: [], counts: {} };
+function loadState() {
+  try {
+    return { ...defaultState(), ...JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") };
+  } catch {
+    return defaultState();
   }
-
-  const counts = {};
-  let intensityTotal = 0;
-  let stakesTotal = 0;
-  let namedOpponents = 0;
-
-  moments.forEach((moment) => {
-    counts[moment.emotion] = (counts[moment.emotion] || 0) + 1;
-    intensityTotal += Number(moment.intensity);
-    stakesTotal += Number(moment.stakes);
-    if (moment.opponent) namedOpponents += 1;
-  });
-
-  const total = moments.length;
-  const avgIntensity = intensityTotal / total;
-  const avgStakes = stakesTotal / total;
-  const score = computeScore();
-  const [topEmotion, topCount] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-  const dominant = topCount / total > 0.4 ? topEmotion : null;
-
-  let profile;
-  if (score >= 85 && avgStakes >= 7.5) {
-    profile = profileDefs.obsession;
-  } else if (dominant) {
-    profile = profileDefs[dominant];
-  } else {
-    profile = profileDefs.devotion;
-  }
-
-  const receipts = [];
-  if (profile === profileDefs.obsession) {
-    receipts.push(`Passion score ${score} with average stakes ${avgStakes.toFixed(1)}/10. Almost nothing on this ledger was casual.`);
-  }
-  receipts.push(dominant
-    ? `${emotionLabels[dominant]} drove ${topCount} of ${total} moment${total === 1 ? "" : "s"}.`
-    : `No single emotion owns the night: ${Object.entries(counts).map(([e, c]) => `${c} ${emotionLabels[e].toLowerCase()}`).join(", ")}.`);
-  receipts.push(`Average intensity ${avgIntensity.toFixed(1)}/10, average stakes ${avgStakes.toFixed(1)}/10.`);
-
-  const top = moments.slice().sort((a, b) => scoreMoment(b) - scoreMoment(a))[0];
-  receipts.push(`Biggest moment: ${top.matchup} (${scoreMoment(top)}). "${top.moment}"`);
-
-  if (total > 1 && namedOpponents >= Math.ceil(total / 2)) {
-    receipts.push(`A named push shows up in ${namedOpponents} of ${total} moments. The opponent is part of why it matters.`);
-  }
-
-  return { score, profile, receipts, counts };
 }
 
-function updateSliders() {
-  intensityValue.value = intensityEl.value;
-  stakesValue.value = stakesEl.value;
-}
-
-function renderSummary() {
-  const { score, profile, receipts } = analyzeLedger();
-  passionScoreEl.textContent = String(score);
-  heatLabelEl.textContent = profile.label;
-  countEl.textContent = String(moments.length);
-  profileTextEl.textContent = profile.text;
-
-  profileReceiptsEl.innerHTML = "";
-  receipts.forEach((line) => {
-    const item = document.createElement("li");
-    item.textContent = line;
-    profileReceiptsEl.appendChild(item);
-  });
-}
-
-function renderEntries() {
-  entriesEl.innerHTML = "";
-  emptyState.hidden = moments.length > 0;
-
-  moments
-    .slice()
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .forEach((moment) => {
-      const item = document.createElement("li");
-      item.className = "entry";
-      item.innerHTML = `
-        <header>
-          <div>
-            <h3>${escapeHtml(moment.matchup)}</h3>
-            <span class="metric-label">${escapeHtml(moment.side)}${moment.opponent ? " vs " + escapeHtml(moment.opponent) : ""}</span>
-          </div>
-          <span class="chip">${escapeHtml(moment.emotion)}</span>
-        </header>
-        <p>${escapeHtml(moment.moment)}</p>
-        <div class="entry-meta">
-          <span>Score ${scoreMoment(moment)}</span>
-          <span>Intensity ${moment.intensity}/10</span>
-          <span>Stakes ${moment.stakes}/10</span>
-        </div>
-      `;
-      entriesEl.appendChild(item);
-    });
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
 function escapeHtml(value) {
@@ -228,20 +68,198 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function makeId(prefix) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function quarterTotals(throughQuarter = 4) {
+  return state.quarters
+    .filter((quarter) => quarter.quarter <= throughQuarter)
+    .reduce((totals, quarter) => {
+      totals.a += quarter.aPoints;
+      totals.b += quarter.bPoints;
+      return totals;
+    }, { a: 0, b: 0 });
+}
+
+function gradedTakes() {
+  return state.takes.filter((take) => take.result !== "pending");
+}
+
+function receiptStats() {
+  const graded = gradedTakes();
+  const wins = state.takes.filter((take) => take.result === "cashed").length;
+  const partial = state.takes.filter((take) => take.result === "half-right").length;
+  const hitScore = graded.length ? Math.round(((wins + partial * 0.5) / graded.length) * 100) : 0;
+  const biggestHit = state.takes.find((take) => take.result === "cashed")
+    || state.takes.find((take) => take.result === "half-right")
+    || null;
+  return { graded, wins, partial, hitScore, biggestHit };
+}
+
+function projectFromQuarter(quarter) {
+  const priorTotals = quarterTotals(quarter.quarter - 1);
+  const currentMargin = (priorTotals.a + quarter.aPoints) - (priorTotals.b + quarter.bPoints);
+  const quarterMargin = quarter.aPoints - quarter.bPoints;
+  const fgEdge = quarter.aFg - quarter.bFg;
+  const turnoverEdge = quarter.bTurnovers - quarter.aTurnovers;
+
+  const nextMarginRaw = (quarterMargin * 0.42) + (currentMargin * 0.18) + (fgEdge * 0.11) + (turnoverEdge * 1.7);
+  const nextMargin = Math.round(nextMarginRaw);
+  const projectedFinalMargin = Math.round(currentMargin + (nextMargin * (4 - quarter.quarter)));
+  const pace = Math.round((quarter.aPoints + quarter.bPoints) / 2);
+  const nextA = Math.max(12, pace + Math.round(nextMargin / 2));
+  const nextB = Math.max(12, pace - Math.round(nextMargin / 2));
+
+  return {
+    nextMargin,
+    nextA,
+    nextB,
+    projectedFinalMargin,
+    reasoning: [
+      `Current margin after Q${quarter.quarter}: ${formatMargin(currentMargin)} ${state.game.teamA}.`,
+      `Q${quarter.quarter} margin was ${formatMargin(quarterMargin)}; the model weights recent pressure, not just the scoreboard.`,
+      `FG edge: ${formatMargin(fgEdge, false)} percentage points. Turnover edge: ${formatMargin(turnoverEdge, false)} possessions.`,
+      `Formula: recent margin * 0.42 + current margin * 0.18 + FG edge * 0.11 + turnover edge * 1.7.`
+    ]
+  };
+}
+
+function gradeModelCalls() {
+  state.modelCalls.forEach((call) => {
+    const nextQuarter = state.quarters.find((quarter) => quarter.quarter === call.quarter + 1);
+    if (nextQuarter && call.nextGrade === "pending") {
+      const actual = nextQuarter.aPoints - nextQuarter.bPoints;
+      const miss = Math.abs(call.nextMargin - actual);
+      call.actualNextMargin = actual;
+      call.nextGrade = miss <= 3 ? "cashed" : miss <= 7 ? "half-right" : "missed";
+      call.nextReceipt = `Called Q${call.quarter + 1} ${formatMargin(call.nextMargin)}; actual was ${formatMargin(actual)}. Missed by ${miss}.`;
+    }
+
+    const finalTotals = quarterTotals(4);
+    if (state.quarters.some((quarter) => quarter.quarter === 4) && call.finalGrade === "pending") {
+      const actualFinal = finalTotals.a - finalTotals.b;
+      const miss = Math.abs(call.projectedFinalMargin - actualFinal);
+      call.actualFinalMargin = actualFinal;
+      call.finalGrade = miss <= 5 ? "cashed" : miss <= 10 ? "half-right" : "missed";
+      call.finalReceipt = `Projected final ${formatMargin(call.projectedFinalMargin)}; actual final was ${formatMargin(actualFinal)}. Missed by ${miss}.`;
+    }
+  });
+}
+
+function formatMargin(value, includeTeam = true) {
+  const prefix = value > 0 ? "+" : "";
+  if (!includeTeam) return `${prefix}${value}`;
+  if (value === 0) return "even";
+  return `${prefix}${value}`;
+}
+
+function renderSummary() {
+  const stats = receiptStats();
+  const modelGraded = state.modelCalls.filter((call) => call.nextGrade !== "pending" || call.finalGrade !== "pending").length;
+
+  takeCountEl.textContent = String(state.takes.length);
+  hitRateEl.textContent = `${stats.hitScore}%`;
+  modelCountEl.textContent = String(state.modelCalls.length);
+
+  receiptLinesEl.innerHTML = "";
+  const lines = [];
+  if (!state.takes.length && !state.modelCalls.length) {
+    receiptTextEl.textContent = "Call a take or run the quarter model to start building a receipt.";
+  } else {
+    receiptTextEl.textContent = `${state.game.teamA} vs ${state.game.teamB}: receipts, not vibes.`;
+    lines.push(`${stats.graded.length} graded take${stats.graded.length === 1 ? "" : "s"}: ${stats.wins} cashed, ${stats.partial} half-right.`);
+    lines.push(`Hit rate counts half-right as half credit: ${stats.hitScore}%.`);
+    if (stats.biggestHit) lines.push(`Best receipt so far: "${stats.biggestHit.text}" (${resultLabels[stats.biggestHit.result]}).`);
+    if (state.modelCalls.length) lines.push(`${state.modelCalls.length} readable model call${state.modelCalls.length === 1 ? "" : "s"}, ${modelGraded} graded by later game data.`);
+  }
+
+  lines.forEach((line) => {
+    const item = document.createElement("li");
+    item.textContent = line;
+    receiptLinesEl.appendChild(item);
+  });
+}
+
+function renderTakes() {
+  takeList.innerHTML = "";
+  state.takes.forEach((take) => {
+    const item = document.createElement("li");
+    item.className = `entry ${take.result}`;
+    item.innerHTML = `
+      <header>
+        <div>
+          <h3>${escapeHtml(take.text)}</h3>
+          <span class="metric-label">${escapeHtml(take.tag)} · ${escapeHtml(take.confidence)}</span>
+        </div>
+        <span class="chip">${resultLabels[take.result]}</span>
+      </header>
+      <div class="result-row" data-id="${take.id}">
+        ${Object.entries(resultLabels).map(([value, label]) => `
+          <button class="${take.result === value ? "active" : ""}" type="button" data-result="${value}">${label}</button>
+        `).join("")}
+      </div>
+    `;
+    takeList.appendChild(item);
+  });
+}
+
+function renderModelCalls() {
+  modelList.innerHTML = "";
+  state.modelCalls.forEach((call) => {
+    const grade = call.finalGrade !== "pending" ? call.finalGrade : call.nextGrade;
+    const item = document.createElement("li");
+    item.className = `entry ${grade}`;
+    item.innerHTML = `
+      <header>
+        <div>
+          <h3>Q${call.quarter} model call</h3>
+          <span class="metric-label">Next quarter ${formatMargin(call.nextMargin)} · Final ${formatMargin(call.projectedFinalMargin)}</span>
+        </div>
+        <span class="chip">${resultLabels[grade] || "Pending"}</span>
+      </header>
+      <ul class="mini-receipts">
+        ${call.reasoning.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}
+        ${call.nextReceipt ? `<li>${escapeHtml(call.nextReceipt)}</li>` : ""}
+        ${call.finalReceipt ? `<li>${escapeHtml(call.finalReceipt)}</li>` : ""}
+      </ul>
+    `;
+    modelList.appendChild(item);
+  });
+}
+
+function renderLabels() {
+  teamAInput.value = state.game.teamA;
+  teamBInput.value = state.game.teamB;
+  teamALabel.textContent = state.game.teamA;
+  teamBLabel.textContent = state.game.teamB;
+}
+
+function render() {
+  gradeModelCalls();
+  renderLabels();
+  renderSummary();
+  renderTakes();
+  renderModelCalls();
+  emptyState.hidden = state.takes.length > 0 || state.modelCalls.length > 0;
+  saveState();
+}
+
 function positionFor(index) {
   const width = canvas.width;
   const height = canvas.height;
-  const side = index % 2 === 0 ? 0.28 : 0.72;
-  const x = width * side + Math.sin(index * 1.93) * 120;
-  const y = height * (0.24 + ((index * 0.19) % 0.52));
+  const side = index % 2 === 0 ? 0.32 : 0.68;
+  const x = width * side + Math.sin(index * 1.9) * 110;
+  const y = height * (0.24 + ((index * 0.17) % 0.5));
   return { x, y };
 }
 
 function drawCourt() {
   const width = canvas.width;
   const height = canvas.height;
-  ctx.clearRect(0, 0, width, height);
+  pulse = (pulse + 0.022) % (Math.PI * 2);
 
+  ctx.clearRect(0, 0, width, height);
   const wood = ctx.createLinearGradient(0, 0, width, height);
   wood.addColorStop(0, "#bf7436");
   wood.addColorStop(0.5, "#a85c2d");
@@ -252,139 +270,61 @@ function drawCourt() {
   ctx.strokeStyle = "rgba(255,245,226,0.72)";
   ctx.lineWidth = 5;
   ctx.strokeRect(34, 34, width - 68, height - 68);
-
   ctx.beginPath();
   ctx.moveTo(width / 2, 34);
   ctx.lineTo(width / 2, height - 34);
   ctx.stroke();
-
   ctx.beginPath();
   ctx.arc(width / 2, height / 2, 86, 0, Math.PI * 2);
   ctx.stroke();
+  drawHoop(112, height / 2, 1);
+  drawHoop(width - 112, height / 2, -1);
 
-  drawHalfCourt(34, width / 2 - 34, height);
-  drawHalfCourt(width - 34, -(width / 2 - 34), height);
+  const dots = [
+    ...state.takes.map((take) => ({ result: take.result, size: take.confidence === "Legacy on the line" ? 21 : take.confidence === "Locked in" ? 17 : 13 })),
+    ...state.modelCalls.map((call) => ({ result: call.finalGrade !== "pending" ? call.finalGrade : call.nextGrade, size: 18 }))
+  ];
 
-  drawMoments();
-  requestAnimationFrame(drawCourt);
-}
-
-function drawHalfCourt(originX, direction, height) {
-  const sign = direction > 0 ? 1 : -1;
-  const hoopX = originX + sign * 78;
-  const hoopY = height / 2;
-
-  ctx.strokeStyle = "rgba(255,245,226,0.7)";
-  ctx.lineWidth = 4;
-
-  ctx.strokeRect(originX, hoopY - 118, sign * 190, 236);
-  ctx.strokeRect(originX, hoopY - 72, sign * 72, 144);
-
-  ctx.beginPath();
-  ctx.arc(hoopX, hoopY, 17, 0, Math.PI * 2);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.arc(hoopX, hoopY, 168, -Math.PI / 2, Math.PI / 2, sign < 0);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.arc(originX + sign * 190, hoopY, 70, -Math.PI / 2, Math.PI / 2, sign < 0);
-  ctx.stroke();
-}
-
-function drawMoments() {
-  const width = canvas.width;
-  const height = canvas.height;
-  pulse = (pulse + 0.025) % (Math.PI * 2);
-
-  if (replay && replay.step > 0) {
-    ctx.strokeStyle = "rgba(255,245,226,0.55)";
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 8]);
-    ctx.beginPath();
-    for (let step = 0; step <= replay.step; step += 1) {
-      const point = positionFor(replay.order[step]);
-      if (step === 0) ctx.moveTo(point.x, point.y);
-      else ctx.lineTo(point.x, point.y);
-    }
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
-  moments.forEach((moment, index) => {
-    const score = scoreMoment(moment);
+  dots.forEach((dot, index) => {
     const { x, y } = positionFor(index);
-    const radius = 8 + (score / 10) + Math.sin(pulse + index) * 2;
-    const isActive = replay && replay.order[replay.step] === index;
-    const dimmed = replay && !isActive;
-
+    const radius = dot.size + Math.sin(pulse + index) * 2;
     ctx.beginPath();
-    ctx.fillStyle = colors[moment.emotion] || "#fff";
-    ctx.globalAlpha = dimmed ? 0.22 : 0.9;
+    ctx.fillStyle = resultColors[dot.result] || resultColors.pending;
+    ctx.globalAlpha = 0.9;
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.fill();
-
     ctx.beginPath();
-    ctx.globalAlpha = dimmed ? 0.06 : 0.2;
-    ctx.arc(x, y, radius + 13, 0, Math.PI * 2);
+    ctx.globalAlpha = 0.18;
+    ctx.arc(x, y, radius + 15, 0, Math.PI * 2);
     ctx.fill();
-
-    if (isActive) {
-      ctx.beginPath();
-      ctx.globalAlpha = 0.95;
-      ctx.strokeStyle = "#f2b84b";
-      ctx.lineWidth = 4;
-      ctx.arc(x, y, radius + 20 + Math.sin(pulse * 2) * 3, 0, Math.PI * 2);
-      ctx.stroke();
-    }
     ctx.globalAlpha = 1;
   });
 
-  if (!moments.length) {
+  if (!dots.length) {
     ctx.fillStyle = "rgba(16,17,19,0.5)";
     ctx.fillRect(0, 0, width, height);
     ctx.fillStyle = "#f5efe5";
     ctx.font = "700 34px system-ui, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("Log the moment that made the game matter.", width / 2, height / 2);
+    ctx.fillText("Call it before the game scores it.", width / 2, height / 2);
     ctx.textAlign = "left";
   }
+
+  requestAnimationFrame(drawCourt);
 }
 
-function startReplay() {
-  if (!moments.length || replay) return;
-  const order = moments
-    .map((moment, index) => index)
-    .sort((a, b) => new Date(moments[a].createdAt) - new Date(moments[b].createdAt));
-  replay = { order, step: 0, timer: null };
-  replayButton.disabled = true;
-  showReplayStep();
+function drawHoop(x, y, direction) {
+  ctx.strokeStyle = "rgba(255,245,226,0.7)";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(x - (direction > 0 ? 78 : 112), y - 118, 190, 236);
+  ctx.strokeRect(x - (direction > 0 ? 0 : 72), y - 72, 72, 144);
+  ctx.beginPath();
+  ctx.arc(x, y, 17, 0, Math.PI * 2);
+  ctx.stroke();
 }
 
-function showReplayStep() {
-  const moment = moments[replay.order[replay.step]];
-  replayCaption.hidden = false;
-  replayCaption.innerHTML = `<strong>${escapeHtml(moment.matchup)} · ${emotionLabels[moment.emotion] || escapeHtml(moment.emotion)}</strong>${escapeHtml(moment.moment)}`;
-  replay.timer = setTimeout(() => {
-    replay.step += 1;
-    if (replay.step >= replay.order.length) endReplay();
-    else showReplayStep();
-  }, 2200);
-}
-
-function endReplay() {
-  if (!replay) return;
-  clearTimeout(replay.timer);
-  replay = null;
-  replayCaption.hidden = true;
-  replayButton.disabled = false;
-}
-
-// The film room card is rendered fresh from the ledger every time, so the
-// shareable artifact can never disagree with the data behind it.
-function buildFilmRoomCard() {
-  const { score, profile, receipts, counts } = analyzeLedger();
+function buildReceiptCard() {
+  const stats = receiptStats();
   const card = document.createElement("canvas");
   card.width = 1080;
   card.height = 1080;
@@ -392,81 +332,59 @@ function buildFilmRoomCard() {
 
   c.fillStyle = "#101113";
   c.fillRect(0, 0, 1080, 1080);
-
-  c.strokeStyle = "rgba(255,245,226,0.07)";
-  c.lineWidth = 3;
+  c.strokeStyle = "rgba(255,245,226,0.08)";
+  c.lineWidth = 4;
   c.beginPath();
-  c.arc(540, 1120, 430, Math.PI, Math.PI * 2);
-  c.stroke();
-  c.beginPath();
-  c.arc(540, -60, 320, 0, Math.PI);
+  c.arc(540, 1110, 430, Math.PI, Math.PI * 2);
   c.stroke();
 
-  c.textAlign = "left";
   c.fillStyle = "#f2b84b";
   c.font = "800 32px system-ui, sans-serif";
-  c.fillText("CLUTCH LEDGER · FILM ROOM CARD", 80, 108);
+  c.fillText("CLUTCH RECEIPTS", 80, 110);
 
   c.fillStyle = "#f5efe5";
-  c.font = "900 88px system-ui, sans-serif";
-  wrapText(c, profile.label, 80, 210, 920, 92);
+  c.font = "900 72px system-ui, sans-serif";
+  wrapText(c, `${state.game.teamA} vs ${state.game.teamB}`, 80, 210, 920, 78);
 
   c.fillStyle = "#aeb6bd";
-  c.font = "700 40px system-ui, sans-serif";
-  c.fillText(`Passion score ${score} · ${moments.length} moment${moments.length === 1 ? "" : "s"}`, 80, 320);
+  c.font = "700 38px system-ui, sans-serif";
+  c.fillText(`${state.takes.length} takes · ${stats.hitScore}% hit rate · ${state.modelCalls.length} model calls`, 80, 340);
 
-  let y = 420;
-  const total = moments.length || 1;
-  Object.keys(colors).forEach((emotion) => {
-    const count = counts[emotion] || 0;
-    const barWidth = Math.round((count / total) * 660);
-    c.fillStyle = "rgba(255,255,255,0.08)";
-    c.fillRect(280, y - 26, 660, 34);
-    if (barWidth) {
-      c.fillStyle = colors[emotion];
-      c.fillRect(280, y - 26, barWidth, 34);
-    }
+  let y = 450;
+  Object.entries(resultLabels).forEach(([key, label]) => {
+    const count = state.takes.filter((take) => take.result === key).length;
+    c.fillStyle = resultColors[key];
+    c.fillRect(80, y - 28, Math.max(8, count * 90), 34);
     c.fillStyle = "#f5efe5";
-    c.font = "700 28px system-ui, sans-serif";
-    c.fillText(emotionLabels[emotion], 80, y);
-    c.textAlign = "right";
-    c.fillText(String(count), 1000, y);
-    c.textAlign = "left";
-    y += 58;
+    c.font = "700 30px system-ui, sans-serif";
+    c.fillText(`${label}: ${count}`, 80, y + 34);
+    y += 84;
   });
 
-  y += 40;
-  const top = moments.slice().sort((a, b) => scoreMoment(b) - scoreMoment(a))[0];
-  if (top) {
+  if (stats.biggestHit) {
+    y += 30;
     c.fillStyle = "#f2b84b";
-    c.font = "800 26px system-ui, sans-serif";
-    c.fillText("TOP MOMENT", 80, y);
-    y += 46;
+    c.font = "800 28px system-ui, sans-serif";
+    c.fillText("BEST RECEIPT", 80, y);
+    y += 50;
     c.fillStyle = "#f5efe5";
-    c.font = "600 34px system-ui, sans-serif";
-    y = wrapText(c, `"${top.moment}"`, 80, y, 920, 44);
-    y += 14;
-    c.fillStyle = "#aeb6bd";
-    c.font = "700 28px system-ui, sans-serif";
-    c.fillText(`${top.matchup} · score ${scoreMoment(top)}`, 80, y);
-    y += 60;
+    c.font = "650 34px system-ui, sans-serif";
+    wrapText(c, `"${stats.biggestHit.text}"`, 80, y, 900, 44);
   }
 
-  const receipt = receipts[0];
-  if (receipt) {
+  const gradedModel = state.modelCalls.find((call) => call.nextReceipt || call.finalReceipt);
+  if (gradedModel) {
     c.fillStyle = "#f2b84b";
-    c.font = "800 26px system-ui, sans-serif";
-    c.fillText("THE RECEIPT", 80, y);
-    y += 44;
+    c.font = "800 28px system-ui, sans-serif";
+    c.fillText("MODEL RECEIPT", 80, 900);
     c.fillStyle = "#f5efe5";
-    c.font = "600 30px system-ui, sans-serif";
-    wrapText(c, receipt, 80, y, 920, 40);
+    c.font = "650 30px system-ui, sans-serif";
+    wrapText(c, gradedModel.finalReceipt || gradedModel.nextReceipt, 80, 950, 900, 40);
   }
 
   c.fillStyle = "#aeb6bd";
-  c.font = "700 26px system-ui, sans-serif";
-  c.fillText(new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }), 80, 1010);
-
+  c.font = "700 24px system-ui, sans-serif";
+  c.fillText("Transparent heuristic. Manual stats. No AI claims.", 80, 1030);
   return card;
 }
 
@@ -487,72 +405,17 @@ function wrapText(c, text, x, y, maxWidth, lineHeight) {
   return y;
 }
 
-function downloadFilmRoomCard() {
-  if (!moments.length) return;
-  const card = buildFilmRoomCard();
+function downloadReceiptCard() {
+  if (!state.takes.length && !state.modelCalls.length) return;
+  const card = buildReceiptCard();
   card.toBlob((blob) => {
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "clutch-ledger-film-room-card.png";
+    link.download = "clutch-receipts-card.png";
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 5000);
   });
 }
-
-function render() {
-  endReplay();
-  renderSummary();
-  renderEntries();
-}
-
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const data = new FormData(form);
-  moments.push({
-    matchup: data.get("matchup").trim(),
-    side: data.get("side").trim(),
-    opponent: data.get("opponent").trim(),
-    emotion: data.get("emotion"),
-    moment: data.get("moment").trim(),
-    intensity: Number(data.get("intensity")),
-    stakes: Number(data.get("stakes")),
-    createdAt: new Date().toISOString()
-  });
-  saveMoments();
-  form.reset();
-  intensityEl.value = 7;
-  stakesEl.value = 6;
-  updateSliders();
-  render();
-});
-
-document.querySelector("#clear-button").addEventListener("click", () => {
-  moments = [];
-  saveMoments();
-  render();
-});
-
-document.querySelector("#seed-button").addEventListener("click", () => {
-  moments = sampleMoments.slice();
-  saveMoments();
-  render();
-});
-
-document.querySelector("#export-button").addEventListener("click", async () => {
-  await copyText(JSON.stringify(moments, null, 2));
-});
-
-document.querySelector("#copy-summary").addEventListener("click", async () => {
-  const { score, profile } = analyzeLedger();
-  const top = moments.slice().sort((a, b) => scoreMoment(b) - scoreMoment(a))[0];
-  const summary = moments.length
-    ? `Clutch Ledger: ${moments.length} moments, passion score ${score}, profile ${profile.label}. Top moment: ${top.matchup} - ${top.moment}`
-    : "Clutch Ledger: no moments logged yet.";
-  await copyText(summary);
-});
-
-replayButton.addEventListener("click", startReplay);
-document.querySelector("#card-button").addEventListener("click", downloadFilmRoomCard);
 
 async function copyText(text) {
   try {
@@ -567,9 +430,116 @@ async function copyText(text) {
   }
 }
 
-intensityEl.addEventListener("input", updateSliders);
-stakesEl.addEventListener("input", updateSliders);
+gameForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const data = new FormData(gameForm);
+  state.game.teamA = data.get("teamA").trim() || "Team A";
+  state.game.teamB = data.get("teamB").trim() || "Team B";
+  render();
+});
 
-updateSliders();
+takeForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const data = new FormData(takeForm);
+  state.takes.unshift({
+    id: makeId("take"),
+    text: data.get("take").trim(),
+    tag: data.get("tag"),
+    confidence: data.get("confidence"),
+    result: "pending",
+    createdAt: new Date().toISOString()
+  });
+  takeForm.reset();
+  render();
+});
+
+modelForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const data = new FormData(modelForm);
+  const quarter = {
+    quarter: Number(data.get("quarter")),
+    aPoints: Number(data.get("aPoints")),
+    bPoints: Number(data.get("bPoints")),
+    aFg: Number(data.get("aFg")),
+    bFg: Number(data.get("bFg")),
+    aTurnovers: Number(data.get("aTurnovers")),
+    bTurnovers: Number(data.get("bTurnovers"))
+  };
+  state.quarters = state.quarters.filter((item) => item.quarter !== quarter.quarter).concat(quarter);
+  state.quarters.sort((a, b) => a.quarter - b.quarter);
+
+  if (quarter.quarter < 4) {
+    const projection = projectFromQuarter(quarter);
+    state.modelCalls.unshift({
+      id: makeId("model"),
+      quarter: quarter.quarter,
+      nextMargin: projection.nextMargin,
+      projectedNextScore: `${state.game.teamA} ${projection.nextA}, ${state.game.teamB} ${projection.nextB}`,
+      projectedFinalMargin: projection.projectedFinalMargin,
+      reasoning: projection.reasoning,
+      nextGrade: "pending",
+      finalGrade: "pending",
+      createdAt: new Date().toISOString()
+    });
+  }
+  render();
+});
+
+takeList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-result]");
+  if (!button) return;
+  const row = button.closest(".result-row");
+  const take = state.takes.find((item) => item.id === row.dataset.id);
+  if (!take) return;
+  take.result = button.dataset.result;
+  render();
+});
+
+document.querySelector("#seed-button").addEventListener("click", () => {
+  Object.assign(state, {
+    game: { teamA: "Celtics", teamB: "Lakers" },
+    takes: [
+      { id: makeId("take"), text: "Bench decides this game before the stars do.", tag: "Clutch call", confidence: "Locked in", result: "cashed", createdAt: new Date().toISOString() },
+      { id: makeId("take"), text: "Tatum gets to 30 if the Lakers keep switching small.", tag: "Player prop", confidence: "Legacy on the line", result: "half-right", createdAt: new Date().toISOString() },
+      { id: makeId("take"), text: "Lakers fans blame the whistle by halftime.", tag: "Rivalry talk", confidence: "Casual", result: "pending", createdAt: new Date().toISOString() }
+    ],
+    quarters: [
+      { quarter: 1, aPoints: 31, bPoints: 24, aFg: 51, bFg: 43, aTurnovers: 3, bTurnovers: 6 },
+      { quarter: 2, aPoints: 27, bPoints: 29, aFg: 45, bFg: 48, aTurnovers: 5, bTurnovers: 4 }
+    ],
+    modelCalls: []
+  });
+  const projection = projectFromQuarter(state.quarters[0]);
+  state.modelCalls.unshift({
+    id: makeId("model"),
+    quarter: 1,
+    nextMargin: projection.nextMargin,
+    projectedNextScore: `${state.game.teamA} ${projection.nextA}, ${state.game.teamB} ${projection.nextB}`,
+    projectedFinalMargin: projection.projectedFinalMargin,
+    reasoning: projection.reasoning,
+    nextGrade: "pending",
+    finalGrade: "pending",
+    createdAt: new Date().toISOString()
+  });
+  render();
+});
+
+document.querySelector("#clear-button").addEventListener("click", () => {
+  Object.assign(state, defaultState());
+  render();
+});
+
+document.querySelector("#export-button").addEventListener("click", async () => {
+  await copyText(JSON.stringify(state, null, 2));
+});
+
+document.querySelector("#copy-summary").addEventListener("click", async () => {
+  const stats = receiptStats();
+  const summary = `Clutch Receipts: ${state.game.teamA} vs ${state.game.teamB}. ${state.takes.length} takes, ${stats.hitScore}% hit rate, ${state.modelCalls.length} readable model calls.`;
+  await copyText(summary);
+});
+
+document.querySelector("#card-button").addEventListener("click", downloadReceiptCard);
+
 render();
 drawCourt();

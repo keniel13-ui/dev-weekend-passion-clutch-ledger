@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Clutch Ledger</title>
-  <meta name="description" content="A basketball passion tracker for rivalry nights, team spirit, and the moments that make a game matter.">
+  <title>Clutch Receipts</title>
+  <meta name="description" content="A no-login NBA fan tool for calling your takes, running a readable quarter model, and grading both against the game.">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -14,112 +14,166 @@
         <div class="topbar">
           <div>
             <p class="eyebrow">Weekend Challenge: Passion Edition</p>
-            <h1 id="app-title">Clutch Ledger</h1>
+            <h1 id="app-title">Clutch Receipts</h1>
+            <p class="lede">A take is just talk until the game scores it.</p>
           </div>
-          <button class="icon-button" id="seed-button" type="button" title="Load sample rivalry moments" aria-label="Load sample rivalry moments">
+          <button class="icon-button" id="seed-button" type="button" title="Load sample NBA night" aria-label="Load sample NBA night">
             <span aria-hidden="true">+</span>
           </button>
         </div>
 
-        <div class="score-row" aria-label="Current passion summary">
+        <div class="score-row" aria-label="Current receipt summary">
           <div>
-            <span class="metric-label">Passion Score</span>
-            <strong id="passion-score">0</strong>
+            <span class="metric-label">Takes</span>
+            <strong id="take-count">0</strong>
           </div>
           <div>
-            <span class="metric-label">Heat</span>
-            <strong id="heat-label">No entries</strong>
+            <span class="metric-label">Hit Rate</span>
+            <strong id="hit-rate">0%</strong>
           </div>
           <div>
-            <span class="metric-label">Moments</span>
-            <strong id="moment-count">0</strong>
+            <span class="metric-label">Model Calls</span>
+            <strong id="model-count">0</strong>
           </div>
         </div>
 
         <div class="court-wrap">
-          <canvas id="court" width="960" height="680" aria-label="Basketball court passion map"></canvas>
-          <div id="replay-caption" class="replay-caption" hidden></div>
+          <canvas id="court" width="960" height="680" aria-label="Basketball receipt map"></canvas>
           <div class="court-legend" aria-hidden="true">
-            <span><i class="legend-dot fire"></i> Fire</span>
-            <span><i class="legend-dot joy"></i> Joy</span>
-            <span><i class="legend-dot pride"></i> Pride</span>
-            <span><i class="legend-dot nerves"></i> Nerves</span>
-            <span><i class="legend-dot respect"></i> Respect</span>
+            <span><i class="legend-dot cashed"></i> Cashed</span>
+            <span><i class="legend-dot half-right"></i> Half-right</span>
+            <span><i class="legend-dot missed"></i> Missed</span>
+            <span><i class="legend-dot pending"></i> Pending</span>
           </div>
         </div>
 
-        <section class="profile-band" aria-labelledby="profile-title">
+        <section class="receipt-band" aria-labelledby="receipt-title">
           <div>
-            <h2 id="profile-title">Tonight's profile</h2>
-            <p id="profile-text">Log a moment to see whether tonight is rivalry heat, devotion, joy, respect, or pressure.</p>
-            <ul id="profile-receipts" class="receipts" aria-label="Evidence behind the profile"></ul>
+            <h2 id="receipt-title">Receipt readout</h2>
+            <p id="receipt-text">Call a take or run the quarter model to start building a receipt.</p>
+            <ul id="receipt-lines" class="receipts" aria-label="Evidence behind the receipt"></ul>
           </div>
           <div class="profile-actions">
-            <button id="replay-button" class="text-button" type="button">Replay the night</button>
-            <button id="card-button" class="text-button" type="button">Film room card</button>
+            <button id="card-button" class="text-button" type="button">Receipt card</button>
             <button id="copy-summary" class="text-button" type="button">Copy summary</button>
           </div>
         </section>
       </div>
 
-      <aside class="control-panel" aria-label="Log a passion moment">
-        <form id="moment-form">
-          <div class="field">
-            <label for="matchup">Matchup or passion lane</label>
-            <input id="matchup" name="matchup" type="text" maxlength="60" placeholder="Celtics vs Lakers, pickup run, coaching night" required>
-          </div>
-
-          <div class="field two-col">
-            <div>
-              <label for="side">Your side</label>
-              <input id="side" name="side" type="text" maxlength="32" placeholder="Celtics" required>
+      <aside class="control-panel" aria-label="Build receipts">
+        <section class="control-block" aria-labelledby="game-title">
+          <h2 id="game-title">Game</h2>
+          <form id="game-form" class="compact-form">
+            <div class="field two-col">
+              <div>
+                <label for="team-a">Team A</label>
+                <input id="team-a" name="teamA" type="text" maxlength="28" placeholder="Celtics" required>
+              </div>
+              <div>
+                <label for="team-b">Team B</label>
+                <input id="team-b" name="teamB" type="text" maxlength="28" placeholder="Lakers" required>
+              </div>
             </div>
-            <div>
-              <label for="opponent">The push</label>
-              <input id="opponent" name="opponent" type="text" maxlength="32" placeholder="Lakers">
+            <button type="submit" class="primary-button">Set matchup</button>
+          </form>
+        </section>
+
+        <section class="control-block" aria-labelledby="take-title">
+          <h2 id="take-title">Call your take</h2>
+          <form id="take-form">
+            <div class="field">
+              <label for="take-text">Take</label>
+              <textarea id="take-text" name="take" rows="3" maxlength="150" placeholder="Celtics by 10. Tatum 30+. Bench decides this game." required></textarea>
             </div>
-          </div>
 
-          <fieldset class="emotion-grid">
-            <legend>What drove it?</legend>
-            <label><input type="radio" name="emotion" value="fire" checked><span>Fire</span></label>
-            <label><input type="radio" name="emotion" value="joy"><span>Joy</span></label>
-            <label><input type="radio" name="emotion" value="pride"><span>Pride</span></label>
-            <label><input type="radio" name="emotion" value="nerves"><span>Nerves</span></label>
-            <label><input type="radio" name="emotion" value="respect"><span>Respect</span></label>
-          </fieldset>
+            <div class="field two-col">
+              <div>
+                <label for="take-tag">Type</label>
+                <select id="take-tag" name="tag">
+                  <option value="Team take">Team take</option>
+                  <option value="Player prop">Player prop</option>
+                  <option value="Rivalry talk">Rivalry talk</option>
+                  <option value="Clutch call">Clutch call</option>
+                  <option value="Ref/coach gripe">Ref/coach gripe</option>
+                  <option value="Hot take">Hot take</option>
+                </select>
+              </div>
+              <div>
+                <label for="confidence">Confidence</label>
+                <select id="confidence" name="confidence">
+                  <option value="Casual">Casual</option>
+                  <option value="Locked in">Locked in</option>
+                  <option value="Legacy on the line">Legacy on the line</option>
+                </select>
+              </div>
+            </div>
 
-          <div class="field">
-            <label for="moment">Moment</label>
-            <textarea id="moment" name="moment" rows="4" maxlength="180" placeholder="The possession, play, argument, or feeling that made this matter." required></textarea>
-          </div>
+            <button type="submit" class="primary-button">Lock take</button>
+          </form>
+        </section>
 
-          <div class="slider-pair">
-            <label for="intensity">Intensity <output id="intensity-value">7</output></label>
-            <input id="intensity" name="intensity" type="range" min="1" max="10" value="7">
+        <section class="control-block" aria-labelledby="model-title">
+          <div class="section-head">
+            <h2 id="model-title">Readable model</h2>
+            <span class="scope-pill">optional</span>
           </div>
-          <div class="slider-pair">
-            <label for="stakes">Stakes <output id="stakes-value">6</output></label>
-            <input id="stakes" name="stakes" type="range" min="1" max="10" value="6">
-          </div>
+          <p class="scope-note">Manual stats only. No AI, no live feed, no hidden model. The formula is visible in the receipts.</p>
+          <form id="model-form">
+            <div class="field">
+              <label for="quarter">Quarter just finished</label>
+              <select id="quarter" name="quarter">
+                <option value="1">Q1</option>
+                <option value="2">Q2</option>
+                <option value="3">Q3</option>
+                <option value="4">Q4 / final</option>
+              </select>
+            </div>
 
-          <div class="button-row">
-            <button type="submit" class="primary-button">Log moment</button>
-            <button type="button" id="clear-button" class="ghost-button">Clear</button>
-          </div>
-        </form>
+            <div class="stat-grid" aria-label="Quarter stat input">
+              <span></span>
+              <strong id="team-a-label">Team A</strong>
+              <strong id="team-b-label">Team B</strong>
+
+              <label for="a-points">Quarter pts</label>
+              <input id="a-points" name="aPoints" type="number" min="0" max="80" value="28" required>
+              <input id="b-points" name="bPoints" type="number" min="0" max="80" value="24" required>
+
+              <label for="a-fg">FG%</label>
+              <input id="a-fg" name="aFg" type="number" min="0" max="100" value="48" required>
+              <input id="b-fg" name="bFg" type="number" min="0" max="100" value="43" required>
+
+              <label for="a-turnovers">Turnovers</label>
+              <input id="a-turnovers" name="aTurnovers" type="number" min="0" max="20" value="3" required>
+              <input id="b-turnovers" name="bTurnovers" type="number" min="0" max="20" value="5" required>
+            </div>
+
+            <button type="submit" class="primary-button">Run model</button>
+          </form>
+        </section>
       </aside>
     </section>
 
     <section class="ledger" aria-labelledby="ledger-title">
       <div class="section-head">
-        <h2 id="ledger-title">Ledger</h2>
-        <button class="text-button" id="export-button" type="button">Export JSON</button>
+        <h2 id="ledger-title">Receipts</h2>
+        <div class="action-row">
+          <button class="text-button" id="export-button" type="button">Export JSON</button>
+          <button class="text-button" id="clear-button" type="button">Clear</button>
+        </div>
       </div>
       <div id="empty-state" class="empty-state">
-        No moments yet. Start with one real possession, one rivalry, one team you cannot watch casually.
+        No receipts yet. Start with one take you would actually say in the group chat.
       </div>
-      <ol id="entries" class="entries"></ol>
+      <div class="ledger-grid">
+        <section>
+          <h3>Takes</h3>
+          <ol id="take-list" class="entries"></ol>
+        </section>
+        <section>
+          <h3>Model calls</h3>
+          <ol id="model-list" class="entries"></ol>
+        </section>
+      </div>
     </section>
   </main>
 

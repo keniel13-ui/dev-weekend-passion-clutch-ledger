@@ -1,5 +1,5 @@
 ---
-title: "Clutch Ledger: The Box Score Never Says Why the Game Mattered"
+title: "Clutch Receipts: A Take Is Just Talk Until the Game Scores It"
 published: false
 tags: devchallenge, weekendchallenge, javascript, webdev
 ---
@@ -8,20 +8,15 @@ tags: devchallenge, weekendchallenge, javascript, webdev
 
 ## What I Built
 
-Every sports app tracks the score. None of them track the reason you were on your feet in your living room over a regular season game.
+NBA passion is not quiet. It shows up as takes, predictions, trash talk, player agendas, rivalry receipts, and the one thing every fan wants after the game:
 
-Clutch Ledger is a basketball passion tracker. You log the moments that made a game personal: the matchup, your side, the push (the opponent, or whatever was pressing on you), what drove the moment (fire, joy, pride, nerves, or respect), the moment itself, and how hard it hit (intensity and stakes). The app plots every moment on a live court, scores the night, and reads your passion profile back to you.
+> I called it before everyone else saw it.
 
-Here is the part I actually care about: **the profile has to show its receipts.**
+Clutch Receipts is a no-login NBA fan tool for that loop. You lock a take, tag it, set your confidence, and after the game you mark whether it cashed, missed, landed half-right, or turned into shameless cope.
 
-Plenty of apps will hand you a label like "you're a superfan!" from nothing. Clutch Ledger only claims a profile it can back with your own entries, and it shows the evidence right under the claim:
+The app also has an optional transparent quarter model. If you want to follow a game with numbers, you can enter a tiny stat line after a quarter: points, FG%, and turnovers for each team. The model projects the next quarter and final margin, shows the formula it used, then grades itself when you enter later game data.
 
-> **Rivalry Heat** — The opponent is the fuel. The moments that move you are the ones where the push has a name and every possession feels personal.
-> - Fire drove 4 of 6 moments.
-> - Average intensity 8.2/10, average stakes 7.5/10.
-> - A named push shows up in 5 of 6 moments. The opponent is part of why it matters.
-
-The profile is computed from the pattern of the ledger, not from a single score threshold. If no emotion dominates your night, it tells you that too, instead of forcing you into a box.
+No hidden AI. No live feed. No accuracy theater. Receipts, not vibes.
 
 ## Demo
 
@@ -29,12 +24,13 @@ Demo: https://keniel13-ui.github.io/dev-weekend-passion-clutch-ledger/
 
 Try it in this order:
 
-1. Press the **+** button to load sample moments and watch the court light up.
-2. Read **Tonight's profile** and the receipts under it.
-3. Hit **Replay the night** — the app walks back through your moments in order, spotlighting each one on the court with the story of why it mattered.
-4. Hit **Film room card** — it renders a shareable PNG card of your night (profile, score, emotion breakdown, top moment) straight from the ledger, entirely in your browser.
+1. Press the **+** button to load a sample NBA night.
+2. Mark a take as cashed, missed, half-right, or shameless cope.
+3. Read the receipt summary and hit rate.
+4. Run the readable model with quarter stats and inspect the reasoning lines.
+5. Hit **Receipt card** to generate a shareable PNG.
 
-Then clear it and log a real one. Your data never leaves the page: everything lives in localStorage, there is no backend, no account, no tracking.
+Everything runs in the browser with localStorage. There is no account, backend, API key, live data feed, or tracking.
 
 ## Code
 
@@ -42,16 +38,20 @@ Repo: https://github.com/keniel13-ui/dev-weekend-passion-clutch-ledger
 
 ## How I Built It
 
-Vanilla HTML, CSS, and JavaScript. No framework, no build step, no dependencies, no API keys. I wanted the whole thing to be inspectable in three files.
+Vanilla HTML, CSS, and JavaScript. No framework, no build step, no dependencies.
 
 The pieces:
 
-- **The court** is a single `<canvas>` render loop. Every logged moment gets a deterministic position and a pulse, colored by its emotional driver. During replay, the court dims everything except the active moment and draws the path of the night behind it.
-- **The scoring** is simple on purpose: intensity and stakes are weighted, then adjusted by the emotion driving the moment (fire burns hotter than respect). Simple also means auditable — you can read the whole formula in `app.js` in under a minute.
-- **The profile engine** counts what actually happened in your ledger: which emotion dominated, how heavy the average night was, whether your biggest moments had a named opponent. Each profile ships with the evidence lines that justify it. A profile the app can't back with your data is a profile it doesn't get to claim.
-- **The film room card** is rendered fresh from the ledger every time by an offscreen canvas, so the shareable artifact can never disagree with the data behind it.
+- **The take engine** stores one-line fan takes with a type, confidence level, and result marker.
+- **The receipt score** counts cashed takes as full credit and half-right takes as half credit, so the hit rate is simple and inspectable.
+- **The readable model** uses a small heuristic: recent quarter margin, current margin, FG% edge, and turnover edge. The formula is shown in the app instead of hidden behind "the algorithm."
+- **The grading loop** checks the model's next-quarter and final calls against the actual numbers the user enters later.
+- **The receipt card** renders a PNG from the current ledger: hit rate, take results, best receipt, and model receipt if one exists.
+- **The court** stays as the visual language, but now the dots represent receipt status: pending, cashed, half-right, missed, or cope.
 
-Honest limits, because a weekend build should say them: the scoring weights are heuristics, not science. Five emotions is a small vocabulary for what a rivalry game actually does to a person. And the ledger lives in one browser — there's no sync. Those are v2 problems.
+The most important design choice was honesty. The model is not trained AI. It is not machine learning. It does not know real NBA history or fetch live data. It is a transparent heuristic a fan can argue with while watching the game.
+
+That limitation is also the next obvious upgrade: API-backed stat import, so fans do not have to type quarter numbers manually. I kept that out of the weekend build because it needs a backend, keys, and more failure surface than this challenge window deserves.
 
 ## Prize Categories
 
@@ -59,6 +59,8 @@ No prize category technology was used. This is an entry for the overall Weekend 
 
 ## Why This Fits the Theme
 
-The prompt asked for something inspired by passion: rivalry, team spirit, obsession, the things you can't engage with casually. Basketball is that for me — playing it, watching it, arguing about it. What I've never had is a record of *why* a specific night mattered, and the box score has never once explained it.
+The prompt asked for something inspired by passion: rivalry, team spirit, obsession, and the things people cannot engage with casually.
 
-Clutch Ledger is my answer: not "I love this team," but the exact possession, the exact push, the exact pressure that made the game personal — written down, scored, and read back to me with receipts.
+Basketball passion is not just "I love this team." It is calling the run before it happens, defending your player agenda, blaming the coach too early, keeping the receipts, and finding out after the game whether you were sharp or just loud.
+
+Clutch Receipts turns that into a small tool: call it, grade it, and keep the receipt.
