@@ -6,15 +6,19 @@ tags: devchallenge, weekendchallenge, javascript, webdev
 
 *This is a submission for [Weekend Challenge: Passion Edition](https://dev.to/challenges/weekend-2026-07-09).*
 
+I built this because of one night.
+
+Me and my childhood friends have watched and played ball our whole lives, and the real game between us has always been who called it right. [Game 4 of the 2026 Finals](https://apnews.com/article/ba83cdcb98f92d0c9fffd32a5745c97c), Spurs up 29 on the Knicks, and I'm telling the boys it isn't holding. Not hope, a read: the Knicks had already beaten this Spurs team in the [NBA Cup](https://www.washingtonpost.com/sports/2025/12/17/knicks-spurs-nba-cup-championship/), they had the veterans who stay locked in when a game actually matters, and San Antonio was one of the youngest teams ever to reach a Finals. Young legs build leads. Veterans and pressure take them back.
+
+The Knicks came all the way back and won it, the largest comeback in Finals history. And I got to sit there and prove it out loud.
+
+That feeling, being right in front of the people who doubted you, is the whole reason this exists. I wanted the receipt.
+
 ## What I Built
 
-NBA passion is not quiet. It shows up as takes, predictions, trash talk, player agendas, rivalry receipts, and the one thing every fan wants after the game:
+Clutch Receipts is a no-login, local-first NBA fan tool for locking takes before the game settles them. You write the take, tag it, set your confidence, and after the game you mark the result: cashed, missed, half-right, or shameless cope.
 
-> I called it before everyone else saw it.
-
-Clutch Receipts is a no-login NBA fan tool for that loop. You lock a take, tag it, set your confidence, and after the game you mark whether it cashed, missed, landed half-right, or turned into shameless cope.
-
-The app also has an optional transparent quarter model. If you want to follow a game with numbers, you can enter a tiny stat line after a quarter: points, FG%, and turnovers for each team. The model projects the next quarter and final margin, shows the formula it used, then grades itself when you enter later game data.
+It also has an optional transparent quarter projection model. If you want to follow a game with numbers, you enter a small stat line after a quarter (points, FG%, and turnovers for each team). The model projects the next quarter and the final margin, shows the exact formula it used, then grades itself when you enter the real numbers later.
 
 No hidden AI. No live feed. No accuracy theater. Receipts, not vibes.
 
@@ -22,15 +26,17 @@ No hidden AI. No live feed. No accuracy theater. Receipts, not vibes.
 
 Demo: https://keniel13-ui.github.io/dev-weekend-passion-clutch-ledger/
 
+<!-- REMINDER (delete this line): upload your screenshot here in the DEV editor, right under the demo link -->
+
 Try it in this order:
 
 1. Press the **+** button to load a sample NBA night.
 2. Mark a take as cashed, missed, half-right, or shameless cope.
 3. Read the receipt summary and hit rate.
-4. Run the readable model with quarter stats and inspect the reasoning lines.
+4. Run the quarter projection model and inspect the reasoning lines.
 5. Hit **Receipt card** to generate a shareable PNG.
 
-Everything runs in the browser with localStorage. There is no account, backend, API key, live data feed, or tracking.
+Everything runs in the browser with localStorage. No account, backend, API key, live data feed, or tracking.
 
 ## Code
 
@@ -38,29 +44,33 @@ Repo: https://github.com/keniel13-ui/dev-weekend-passion-clutch-ledger
 
 ## How I Built It
 
-Vanilla HTML, CSS, and JavaScript. No framework, no build step, no dependencies.
+Vanilla HTML, CSS, and JavaScript. No framework, no build step, no dependencies, no backend.
 
 The pieces:
 
-- **The take engine** stores one-line fan takes with a type, confidence level, and result marker.
-- **The receipt score** counts cashed takes as full credit and half-right takes as half credit, so the hit rate is simple and inspectable.
-- **The readable model** uses a small heuristic: recent quarter margin, current margin, FG% edge, and turnover edge. The formula is shown in the app instead of hidden behind "the algorithm."
-- **The grading loop** checks the model's next-quarter and final calls against the actual numbers the user enters later.
-- **The receipt card** renders a PNG from the current ledger: hit rate, take results, best receipt, and model receipt if one exists.
-- **The court** stays as the visual language, but now the dots represent receipt status: pending, cashed, half-right, missed, or cope.
+- **The take engine** stores one-line fan takes with a type, confidence level, and a mutable result marker in localStorage.
+- **The receipt score** counts cashed takes as full credit and half-right takes as half credit, so the hit rate stays simple and inspectable.
+- **The projection model** is a deterministic heuristic on recent quarter margin, current margin, FG% edge, and turnover edge. The exact formula renders in the UI, so a fan can argue with the math in real time.
+- **The grading loop** checks the model's next-quarter and final calls against the actual numbers you enter later.
+- **The receipt card** uses the canvas API to turn the current ledger (hit rate, results, best take) into a downloadable PNG.
+- **The court** stays as the visual metaphor, but the dots now represent receipt status: pending, cashed, half-right, missed, or cope.
 
-The most important design choice was honesty. The model is not trained AI. It is not machine learning. It does not know real NBA history or fetch live data. It is a transparent heuristic a fan can argue with while watching the game.
+The most important choice was honesty. The projection model is not trained AI or machine learning. It does not know real NBA history or fetch live data. It is a transparent heuristic you can read and argue with while the game is on.
 
-That limitation is also the next obvious upgrade: API-backed stat import, so fans do not have to type quarter numbers manually. I kept that out of the weekend build because it needs a backend, keys, and more failure surface than this challenge window deserves.
+## What I'd Add Next
+
+The obvious next version is API-backed stat import, so fans don't have to type quarter numbers by hand. After that, private friend groups and season-long receipt boards, so a group can actually track who calls games right over time.
+
+I kept those out of this build on purpose. The weekend rewarded one complete, honest loop over a bigger unfinished idea.
 
 ## Prize Categories
 
-No prize category technology was used. This is an entry for the overall Weekend Challenge.
+No prize category technology was used. This is an entry for the overall Weekend Challenge. I kept the build small, client-side, and transparent on purpose, so the receipt loop could be judged on its own without accounts, API keys, hidden AI, or backend failure points.
 
 ## Why This Fits the Theme
 
-The prompt asked for something inspired by passion: rivalry, team spirit, obsession, and the things people cannot engage with casually.
+The prompt asked for something inspired by passion: rivalry, obsession, the things people can't engage with casually.
 
-Basketball passion is not just "I love this team." It is calling the run before it happens, defending your player agenda, blaming the coach too early, keeping the receipts, and finding out after the game whether you were sharp or just loud.
+Basketball passion is not just "I love this team." It's calling the run before it happens, defending your player agenda, blaming the coach too early, keeping the receipts on your rival, and finding out after the game whether you were sharp or just loud.
 
-Clutch Receipts turns that into a small tool: call it, grade it, and keep the receipt.
+Clutch Receipts turns that into a small tool. Call it, grade it, keep the receipt.
