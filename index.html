@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clutch Ledger</title>
+  <meta name="description" content="A basketball passion tracker for rivalry nights, team spirit, and the moments that make a game matter.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="workspace" aria-labelledby="app-title">
+      <div class="court-panel">
+        <div class="topbar">
+          <div>
+            <p class="eyebrow">Weekend Challenge: Passion Edition</p>
+            <h1 id="app-title">Clutch Ledger</h1>
+          </div>
+          <button class="icon-button" id="seed-button" type="button" title="Load sample rivalry moments" aria-label="Load sample rivalry moments">
+            <span aria-hidden="true">+</span>
+          </button>
+        </div>
+
+        <div class="score-row" aria-label="Current passion summary">
+          <div>
+            <span class="metric-label">Passion Score</span>
+            <strong id="passion-score">0</strong>
+          </div>
+          <div>
+            <span class="metric-label">Heat</span>
+            <strong id="heat-label">No entries</strong>
+          </div>
+          <div>
+            <span class="metric-label">Moments</span>
+            <strong id="moment-count">0</strong>
+          </div>
+        </div>
+
+        <div class="court-wrap">
+          <canvas id="court" width="960" height="680" aria-label="Basketball court passion map"></canvas>
+          <div class="court-legend" aria-hidden="true">
+            <span><i class="legend-dot fire"></i> Fire</span>
+            <span><i class="legend-dot joy"></i> Joy</span>
+            <span><i class="legend-dot pride"></i> Pride</span>
+            <span><i class="legend-dot nerves"></i> Nerves</span>
+            <span><i class="legend-dot respect"></i> Respect</span>
+          </div>
+        </div>
+
+        <section class="profile-band" aria-labelledby="profile-title">
+          <div>
+            <h2 id="profile-title">Tonight's profile</h2>
+            <p id="profile-text">Log a moment to see whether tonight is rivalry heat, devotion, joy, respect, or pressure.</p>
+          </div>
+          <button id="copy-summary" class="text-button" type="button">Copy summary</button>
+        </section>
+      </div>
+
+      <aside class="control-panel" aria-label="Log a passion moment">
+        <form id="moment-form">
+          <div class="field">
+            <label for="matchup">Matchup or passion lane</label>
+            <input id="matchup" name="matchup" type="text" maxlength="60" placeholder="Celtics vs Lakers, pickup run, coaching night" required>
+          </div>
+
+          <div class="field two-col">
+            <div>
+              <label for="side">Your side</label>
+              <input id="side" name="side" type="text" maxlength="32" placeholder="Celtics" required>
+            </div>
+            <div>
+              <label for="opponent">The push</label>
+              <input id="opponent" name="opponent" type="text" maxlength="32" placeholder="Lakers">
+            </div>
+          </div>
+
+          <fieldset class="emotion-grid">
+            <legend>What drove it?</legend>
+            <label><input type="radio" name="emotion" value="fire" checked><span>Fire</span></label>
+            <label><input type="radio" name="emotion" value="joy"><span>Joy</span></label>
+            <label><input type="radio" name="emotion" value="pride"><span>Pride</span></label>
+            <label><input type="radio" name="emotion" value="nerves"><span>Nerves</span></label>
+            <label><input type="radio" name="emotion" value="respect"><span>Respect</span></label>
+          </fieldset>
+
+          <div class="field">
+            <label for="moment">Moment</label>
+            <textarea id="moment" name="moment" rows="4" maxlength="180" placeholder="The possession, play, argument, or feeling that made this matter." required></textarea>
+          </div>
+
+          <div class="slider-pair">
+            <label for="intensity">Intensity <output id="intensity-value">7</output></label>
+            <input id="intensity" name="intensity" type="range" min="1" max="10" value="7">
+          </div>
+          <div class="slider-pair">
+            <label for="stakes">Stakes <output id="stakes-value">6</output></label>
+            <input id="stakes" name="stakes" type="range" min="1" max="10" value="6">
+          </div>
+
+          <div class="button-row">
+            <button type="submit" class="primary-button">Log moment</button>
+            <button type="button" id="clear-button" class="ghost-button">Clear</button>
+          </div>
+        </form>
+      </aside>
+    </section>
+
+    <section class="ledger" aria-labelledby="ledger-title">
+      <div class="section-head">
+        <h2 id="ledger-title">Ledger</h2>
+        <button class="text-button" id="export-button" type="button">Export JSON</button>
+      </div>
+      <div id="empty-state" class="empty-state">
+        No moments yet. Start with one real possession, one rivalry, one team you cannot watch casually.
+      </div>
+      <ol id="entries" class="entries"></ol>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

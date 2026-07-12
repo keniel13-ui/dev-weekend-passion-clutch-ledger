@@ -1,0 +1,27 @@
+# Clutch Ledger
+
+A basketball passion tracker built fresh for DEV Weekend Challenge: Passion Edition.
+
+Clutch Ledger lets a fan, player, or coach log the moments that make a game feel personal: rivalry heat, team pride, nerves, respect, and joy. The app maps each entry onto a live court visualization, computes a passion score, and summarizes the emotional profile of the night.
+
+## Features
+
+- Log a matchup, side, opponent, moment, emotion, intensity, and stakes.
+- See each entry plotted on an animated basketball court.
+- Compute a passion score and profile from the logged moments.
+- Copy a shareable summary or export the raw JSON.
+- Fully client-side. Data stays in browser localStorage.
+
+## Running locally
+
+Open `index.html` in a browser.
+
+No build step and no dependencies are required.
+
+## Challenge fit
+
+This project was started during the challenge window for the DEV Weekend Challenge: Passion Edition. It is built around passion as rivalry, devotion to a team, and the specific moments that make a game matter.
+
+## Post-deadline note
+
+If any commits are made after the challenge deadline, they should be listed here before submission, per the challenge rules.
