@@ -22,7 +22,7 @@ The app turns those entries into a live court visualization, a passion score, an
 
 ## Demo
 
-Demo link: TODO
+Demo: https://dev-weekend-passion-clutch-ledger.vercel.app
 
 Open the app, press the plus button to load sample moments, or log your own game moment. The court updates immediately. The ledger stays local in the browser through localStorage.
 
