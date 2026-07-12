@@ -2,7 +2,7 @@
 
 A no-login NBA fan tool built fresh for DEV Weekend Challenge: Passion Edition.
 
-Clutch Receipts lets a fan call one-line takes, mark whether they cashed, and optionally run a transparent quarter model that grades itself against later game data. The point is not hidden AI or a live feed. The point is receipts: a take is just talk until the game scores it.
+Clutch Receipts lets a fan call one-line takes, mark whether they cashed, optionally run a transparent quarter model that grades itself against later game data, and generate a Gemini coach readback from the receipts. The point is receipts: a take is just talk until the game scores it.
 
 Live demo: https://keniel13-ui.github.io/dev-weekend-passion-clutch-ledger/
 
@@ -12,9 +12,10 @@ Live demo: https://keniel13-ui.github.io/dev-weekend-passion-clutch-ledger/
 - Mark each take as pending, cashed, half-right, missed, or shameless cope.
 - Optional readable quarter model using only manual points, FG%, and turnover inputs.
 - Model receipts show the formula and later grade the call against actual next-quarter or final margins.
+- Optional Google AI readback with Gemini. The user brings a Gemini API key for that request only; the key is not saved.
 - Receipt card renders a shareable PNG with hit rate, best take, and model receipts.
 - Animated court visualization maps pending, cashed, half-right, and missed receipts.
-- Fully client-side. No account, backend, API key, live feed, or tracking.
+- Fully client-side. No account, backend, live feed, or tracking.
 
 ## Running locally
 
@@ -25,6 +26,8 @@ No build step and no dependencies are required.
 ## Honesty Boundary
 
 The model is a transparent heuristic, not trained AI or machine learning. It does not fetch NBA data. The user enters the numbers manually, and the app shows the math it used.
+
+The Google AI feature is separate: Gemini does not make the prediction or grade the game. It reads the local receipt ledger and writes a short coach readback. The app uses a bring-your-own-key flow so no secret is shipped in the static site.
 
 ## Where This Goes Next
 

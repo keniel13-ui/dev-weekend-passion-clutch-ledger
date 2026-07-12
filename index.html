@@ -150,6 +150,22 @@
             <button type="submit" class="primary-button">Run model</button>
           </form>
         </section>
+
+        <section class="control-block" aria-labelledby="gemini-title">
+          <div class="section-head">
+            <h2 id="gemini-title">Gemini readback</h2>
+            <span class="scope-pill">Google AI</span>
+          </div>
+          <p class="scope-note">Optional coach readback from Gemini. Bring your own API key; it is used for this request only and is not saved.</p>
+          <form id="gemini-form">
+            <div class="field">
+              <label for="gemini-key">Gemini API key</label>
+              <input id="gemini-key" name="geminiKey" type="password" autocomplete="off" placeholder="Paste key from Google AI Studio">
+            </div>
+            <button type="submit" class="primary-button">Generate readback</button>
+          </form>
+          <div id="gemini-output" class="ai-readback" hidden></div>
+        </section>
       </aside>
     </section>
 

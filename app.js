@@ -1,4 +1,5 @@
 const STORAGE_KEY = "clutch-receipts-v1";
+const GEMINI_MODEL = "gemini-3.5-flash";
 
 const resultLabels = {
   pending: "Pending",
@@ -21,6 +22,7 @@ const state = loadState();
 const gameForm = document.querySelector("#game-form");
 const takeForm = document.querySelector("#take-form");
 const modelForm = document.querySelector("#model-form");
+const geminiForm = document.querySelector("#gemini-form");
 const takeList = document.querySelector("#take-list");
 const modelList = document.querySelector("#model-list");
 const emptyState = document.querySelector("#empty-state");
@@ -33,6 +35,7 @@ const teamAInput = document.querySelector("#team-a");
 const teamBInput = document.querySelector("#team-b");
 const teamALabel = document.querySelector("#team-a-label");
 const teamBLabel = document.querySelector("#team-b-label");
+const geminiOutput = document.querySelector("#gemini-output");
 const canvas = document.querySelector("#court");
 const ctx = canvas.getContext("2d");
 
@@ -43,7 +46,8 @@ function defaultState() {
     game: { teamA: "Celtics", teamB: "Lakers" },
     takes: [],
     quarters: [],
-    modelCalls: []
+    modelCalls: [],
+    geminiReadback: ""
   };
 }
 
@@ -241,8 +245,19 @@ function render() {
   renderSummary();
   renderTakes();
   renderModelCalls();
+  renderGeminiReadback();
   emptyState.hidden = state.takes.length > 0 || state.modelCalls.length > 0;
   saveState();
+}
+
+function renderGeminiReadback() {
+  if (!state.geminiReadback) {
+    geminiOutput.hidden = true;
+    geminiOutput.textContent = "";
+    return;
+  }
+  geminiOutput.hidden = false;
+  geminiOutput.textContent = state.geminiReadback;
 }
 
 function positionFor(index) {
@@ -373,7 +388,14 @@ function buildReceiptCard() {
   }
 
   const gradedModel = state.modelCalls.find((call) => call.nextReceipt || call.finalReceipt);
-  if (gradedModel) {
+  if (state.geminiReadback) {
+    c.fillStyle = "#f2b84b";
+    c.font = "800 28px system-ui, sans-serif";
+    c.fillText("GEMINI READBACK", 80, 850);
+    c.fillStyle = "#f5efe5";
+    c.font = "650 28px system-ui, sans-serif";
+    wrapText(c, state.geminiReadback, 80, 900, 900, 36);
+  } else if (gradedModel) {
     c.fillStyle = "#f2b84b";
     c.font = "800 28px system-ui, sans-serif";
     c.fillText("MODEL RECEIPT", 80, 900);
@@ -384,7 +406,7 @@ function buildReceiptCard() {
 
   c.fillStyle = "#aeb6bd";
   c.font = "700 24px system-ui, sans-serif";
-  c.fillText("Transparent heuristic. Manual stats. No AI claims.", 80, 1030);
+  c.fillText("Transparent model. Gemini readback optional. Manual stats.", 80, 1030);
   return card;
 }
 
@@ -428,6 +450,76 @@ async function copyText(text) {
     document.execCommand("copy");
     area.remove();
   }
+}
+
+function buildGeminiPrompt() {
+  const stats = receiptStats();
+  const takes = state.takes.map((take) => ({
+    take: take.text,
+    type: take.tag,
+    confidence: take.confidence,
+    result: resultLabels[take.result]
+  }));
+  const modelCalls = state.modelCalls.map((call) => ({
+    quarter: call.quarter,
+    nextMargin: call.nextMargin,
+    finalMargin: call.projectedFinalMargin,
+    nextGrade: resultLabels[call.nextGrade] || call.nextGrade,
+    finalGrade: resultLabels[call.finalGrade] || call.finalGrade,
+    receipt: call.finalReceipt || call.nextReceipt || "Not graded yet"
+  }));
+
+  return [
+    "You are writing a concise coach readback for an NBA fan's Clutch Receipts ledger.",
+    "Do not pretend to know live NBA data. Use only the JSON below.",
+    "In 4 short lines, say: their fan profile, what they got right, what looked like cope or risk, and one sharper next-game take.",
+    "Keep it direct, playful, and grounded in the receipts. No markdown headings.",
+    JSON.stringify({
+      game: state.game,
+      hitRate: `${stats.hitScore}%`,
+      takes,
+      modelCalls
+    }, null, 2)
+  ].join("\n\n");
+}
+
+function extractGeminiText(payload) {
+  if (payload.output_text) return payload.output_text;
+  return (payload.steps || [])
+    .flatMap((step) => step.content || step.output || [])
+    .map((item) => item.text || "")
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+}
+
+async function generateGeminiReadback(apiKey) {
+  const response = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": apiKey
+    },
+    body: JSON.stringify({
+      model: GEMINI_MODEL,
+      input: buildGeminiPrompt(),
+      system_instruction: "You turn sports receipts into honest, short coach readbacks. Never add facts outside the supplied ledger.",
+      generation_config: {
+        thinking_level: "low",
+        temperature: 0.7
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `Gemini request failed with ${response.status}`);
+  }
+
+  const payload = await response.json();
+  const text = extractGeminiText(payload);
+  if (!text) throw new Error("Gemini returned no text.");
+  return text;
 }
 
 gameForm.addEventListener("submit", (event) => {
@@ -485,6 +577,32 @@ modelForm.addEventListener("submit", (event) => {
   render();
 });
 
+geminiForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = geminiForm.querySelector("button");
+  const key = new FormData(geminiForm).get("geminiKey").trim();
+  if (!key) {
+    geminiOutput.hidden = false;
+    geminiOutput.textContent = "Paste a Gemini API key first. The key is only used for this request and is not saved.";
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Reading receipts...";
+  geminiOutput.hidden = false;
+  geminiOutput.textContent = "Gemini is reading the ledger...";
+  try {
+    state.geminiReadback = await generateGeminiReadback(key);
+    geminiForm.reset();
+    render();
+  } catch (error) {
+    geminiOutput.textContent = `Gemini readback failed: ${error.message}`;
+  } finally {
+    button.disabled = false;
+    button.textContent = "Generate readback";
+  }
+});
+
 takeList.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-result]");
   if (!button) return;
@@ -509,6 +627,7 @@ document.querySelector("#seed-button").addEventListener("click", () => {
     ],
     modelCalls: []
   });
+  state.geminiReadback = "You were loud, but not empty. The bench call cashed, the Tatum angle landed halfway, and the rivalry talk is still waiting on a whistle receipt. Next game, make one sharper pregame call with a number attached.";
   const projection = projectFromQuarter(state.quarters[0]);
   state.modelCalls.unshift({
     id: makeId("model"),

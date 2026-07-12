@@ -224,6 +224,18 @@ h3 {
   line-height: 1.45;
 }
 
+.ai-readback {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(242, 184, 75, 0.26);
+  border-radius: 8px;
+  background: rgba(242, 184, 75, 0.08);
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
 .receipts,
 .mini-receipts {
   list-style: none;

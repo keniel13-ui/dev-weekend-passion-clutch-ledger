@@ -22,7 +22,9 @@ Clutch Receipts is a no-login, local-first NBA fan tool for locking takes before
 
 It also has an optional transparent quarter projection model. If you want to follow a game with numbers, you enter a small stat line after a quarter (points, FG%, and turnovers for each team). The model projects the next quarter and the final margin, shows the exact formula it used, then grades itself when you enter the real numbers later.
 
-No hidden AI. No live feed. No accuracy theater. Receipts, not vibes.
+It now has an optional Google AI layer too: Gemini can read the local receipt ledger and generate a short coach readback. The important boundary is that Gemini does not make the prediction or grade the game. The model stays transparent; Gemini summarizes the receipts.
+
+No hidden prediction model. No live feed. No accuracy theater. Receipts, not vibes.
 
 ## Demo
 
@@ -36,9 +38,10 @@ Try it in this order:
 2. Mark a take as cashed, missed, half-right, or shameless cope.
 3. Read the receipt summary and hit rate.
 4. Run the quarter projection model and inspect the reasoning lines.
-5. Hit **Receipt card** to generate a shareable PNG.
+5. Optional: paste a Gemini API key and generate the coach readback.
+6. Hit **Receipt card** to generate a shareable PNG.
 
-Everything runs in the browser with localStorage. No account, backend, API key, live data feed, or tracking.
+Everything runs in the browser with localStorage. No account, backend, live data feed, or tracking. The Gemini feature uses a bring-your-own-key flow for that request only, so no API secret is shipped in the static site.
 
 ## Code
 
@@ -54,10 +57,11 @@ The pieces:
 - **The receipt score** counts cashed takes as full credit and half-right takes as half credit, so the hit rate stays simple and inspectable.
 - **The projection model** is a deterministic heuristic on recent quarter margin, current margin, FG% edge, and turnover edge. The exact formula renders in the UI, so a fan can argue with the math in real time.
 - **The grading loop** checks the model's next-quarter and final calls against the actual numbers you enter later.
+- **The Google AI readback** sends the local receipt summary to Gemini and asks for a short coach readback: what kind of fan you were, what you got right, where you were coping, and one sharper next-game take.
 - **The receipt card** uses the canvas API to turn the current ledger (hit rate, results, best take) into a downloadable PNG.
 - **The court** stays as the visual metaphor, but the dots now represent receipt status: pending, cashed, half-right, missed, or cope.
 
-The most important choice was honesty. The projection model is not trained AI or machine learning. It does not know real NBA history or fetch live data. It is a transparent heuristic you can read and argue with while the game is on.
+The most important choice was honesty. The projection model is not trained AI or machine learning. It does not know real NBA history or fetch live data. It is a transparent heuristic you can read and argue with while the game is on. Gemini is deliberately kept in the readback lane: it explains the receipt, it does not pretend to be the scoreboard.
 
 ## What I'd Add Next
 
@@ -67,7 +71,7 @@ I kept those out of this build on purpose. The weekend rewarded one complete, ho
 
 ## Prize Categories
 
-No prize category technology was used. This is an entry for the overall Weekend Challenge. I kept the build small, client-side, and transparent on purpose, so the receipt loop could be judged on its own without accounts, API keys, hidden AI, or backend failure points.
+This submission now includes **Google AI** through the optional Gemini coach readback. I kept the prediction model separate and transparent on purpose: Google AI is used for the language readback over the user's receipts, not for pretending a black-box model can predict the game.
 
 ## Why This Fits the Theme
 
