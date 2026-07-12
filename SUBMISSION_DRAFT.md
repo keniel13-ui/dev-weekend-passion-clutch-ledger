@@ -1,18 +1,20 @@
 ---
 title: "Clutch Receipts: A Take Is Just Talk Until the Game Scores It"
-published: false
+published: true
 tags: devchallenge, weekendchallenge, javascript, webdev
 ---
 
 *This is a submission for [Weekend Challenge: Passion Edition](https://dev.to/challenges/weekend-2026-07-09).*
 
+Published: https://dev.to/kenielzep97/clutch-receipts-a-take-is-just-talk-until-the-game-scores-it-28jf
+
 I built this because of one night.
 
-Me and my childhood friends have watched and played ball our whole lives, and the real game between us has always been who called it right. [Game 4 of the 2026 Finals](https://apnews.com/article/ba83cdcb98f92d0c9fffd32a5745c97c), Spurs up 29 on the Knicks, and I'm telling the boys it isn't holding. Not hope, a read: the Knicks had already beaten this Spurs team in the [NBA Cup](https://www.washingtonpost.com/sports/2025/12/17/knicks-spurs-nba-cup-championship/), they had the veterans who stay locked in when a game actually matters, and San Antonio was one of the youngest teams ever to reach a Finals. Young legs build leads. Veterans and pressure take them back.
+Me and my childhood friends have watched and played ball our whole lives, and the real game between us has always been who called it right. [Game 4 of the 2026 Finals](https://apnews.com/article/ba83cdcb98f92d0c9fffd32a5745c97c), the Spurs had been up as much as 29. I'm not going to tell you I called a comeback from the bottom of that hole. What I called was the run. Basketball is a game of runs, and when the lead started to shrink and the Knicks got theirs going, you could feel the game tilt. That's when I told the boys the Spurs weren't holding this one. It wasn't hope, it was a read: the Knicks had already beaten this Spurs team in the [NBA Cup](https://www.washingtonpost.com/sports/2025/12/17/knicks-spurs-nba-cup-championship/), they had the veterans who stay locked in when a game actually matters, and San Antonio was one of the youngest teams ever to reach a Finals. Young legs build leads. Veterans and pressure take them back.
 
-The Knicks came all the way back and won it, the largest comeback in Finals history. And I got to sit there and prove it out loud.
+The Knicks came all the way back and won it, the largest comeback in Finals history. I got to watch my read play out in real time, out loud, in front of the people who swore it was over.
 
-That feeling, being right in front of the people who doubted you, is the whole reason this exists. I wanted the receipt.
+That is the whole feeling this is built on. Not luck, not noise, but calling the turn before it finished turning and having something to point at when you were right. The problem is that feeling never lasts. The take gets buried in a group chat that scrolls right past it, and by next week nobody remembers who said it first. So I wanted the receipt. Something that holds the take still long enough for the game to answer it, and keeps the proof when it does.
 
 ## What I Built
 
@@ -26,7 +28,7 @@ No hidden AI. No live feed. No accuracy theater. Receipts, not vibes.
 
 Demo: https://keniel13-ui.github.io/dev-weekend-passion-clutch-ledger/
 
-<!-- REMINDER (delete this line): upload your screenshot here in the DEV editor, right under the demo link -->
+![Screenshot of the Clutch Receipts app showing NBA take tracking, receipt status buttons, and a quarter projection model](https://dev-to-uploads.s3.us-east-2.amazonaws.com/uploads/articles/cjrysksbvssv4zfcwyeu.jpeg)
 
 Try it in this order:
 
