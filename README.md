@@ -4,7 +4,7 @@ A basketball passion tracker built fresh for DEV Weekend Challenge: Passion Edit
 
 Clutch Ledger lets a fan, player, or coach log the moments that make a game feel personal: rivalry heat, team pride, nerves, respect, and joy. The app maps each entry onto a live court visualization, computes a passion score, and summarizes the emotional profile of the night.
 
-Live demo: https://dev-weekend-passion-clutch-ledger.vercel.app
+Live demo: https://keniel13-ui.github.io/dev-weekend-passion-clutch-ledger/
 
 ## Features
 
