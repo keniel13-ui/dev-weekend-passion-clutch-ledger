@@ -25,7 +25,7 @@ The profile is computed from the pattern of the ledger, not from a single score 
 
 ## Demo
 
-Demo: https://dev-weekend-passion-clutch-ledger.vercel.app
+Demo: https://keniel13-ui.github.io/dev-weekend-passion-clutch-ledger/
 
 Try it in this order:
 
@@ -38,7 +38,7 @@ Then clear it and log a real one. Your data never leaves the page: everything li
 
 ## Code
 
-Repo: TODO
+Repo: https://github.com/keniel13-ui/dev-weekend-passion-clutch-ledger
 
 ## How I Built It
 
