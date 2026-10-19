@@ -23,6 +23,14 @@ Open `index.html` in a browser.
 
 No build step and no dependencies are required.
 
+## Tests
+
+```bash
+node --test
+```
+
+Needs Node 20 or newer and nothing else. `test/app.test.js` runs `app.js` against a small fake DOM: the model formula and self-grading, saved-data recovery, HTML escaping, storage failures, the Gemini timeout, and that the Gemini key is never saved.
+
 ## Honesty Boundary
 
 The model is a transparent heuristic, not trained AI or machine learning. It does not fetch NBA data. The user enters the numbers manually, and the app shows the math it used.
@@ -40,3 +48,5 @@ The challenge theme is passion. This project treats NBA passion as takes, rivalr
 ## Post-deadline note
 
 If any commits are made after the challenge deadline, they should be listed here before submission, per the challenge rules.
+
+- 2026-10-19 (after the published submission): reliability, safety and accessibility fixes with no feature changes. Saved data is checked on load, storage failures no longer break the app, whitespace-only takes are rejected, the Gemini request times out after 45 seconds, long text no longer runs off the receipt card, Clear and the sample night ask before replacing receipts, plus screen reader labels, reduced-motion support, and tests.

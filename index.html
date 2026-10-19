@@ -22,7 +22,7 @@
           </button>
         </div>
 
-        <div class="score-row" aria-label="Current receipt summary">
+        <div class="score-row" role="group" aria-label="Current receipt summary">
           <div>
             <span class="metric-label">Takes</span>
             <strong id="take-count">0</strong>
@@ -38,11 +38,12 @@
         </div>
 
         <div class="court-wrap">
-          <canvas id="court" width="960" height="680" aria-label="Basketball receipt map"></canvas>
+          <canvas id="court" width="960" height="680" role="img" aria-label="Basketball receipt map"></canvas>
           <div class="court-legend" aria-hidden="true">
             <span><i class="legend-dot cashed"></i> Cashed</span>
             <span><i class="legend-dot half-right"></i> Half-right</span>
             <span><i class="legend-dot missed"></i> Missed</span>
+            <span><i class="legend-dot cope"></i> Shameless cope</span>
             <span><i class="legend-dot pending"></i> Pending</span>
           </div>
         </div>
@@ -129,7 +130,7 @@
               </select>
             </div>
 
-            <div class="stat-grid" aria-label="Quarter stat input">
+            <div class="stat-grid" role="group" aria-label="Quarter stat input">
               <span></span>
               <strong id="team-a-label">Team A</strong>
               <strong id="team-b-label">Team B</strong>
@@ -164,7 +165,7 @@
             </div>
             <button type="submit" class="primary-button">Generate readback</button>
           </form>
-          <div id="gemini-output" class="ai-readback" hidden></div>
+          <div id="gemini-output" class="ai-readback" role="status" aria-live="polite" hidden></div>
         </section>
       </aside>
     </section>
@@ -192,6 +193,7 @@
       </div>
     </section>
   </main>
+  <p id="sr-status" class="sr-only" role="status" aria-live="polite"></p>
 
   <script src="app.js"></script>
 </body>
