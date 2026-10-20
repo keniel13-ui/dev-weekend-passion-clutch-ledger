@@ -1,5 +1,6 @@
 const STORAGE_KEY = "clutch-receipts-v1";
 const GEMINI_MODEL = "gemini-3.5-flash";
+const GEMINI_TIMEOUT_MS = 45000;
 
 const resultLabels = {
   pending: "Pending",
@@ -16,6 +17,10 @@ const resultColors = {
   cope: "#9f7aea",
   pending: "#4ba3ff"
 };
+
+const MODEL_GRADES = ["pending", "cashed", "half-right", "missed"];
+let storageFailed = false;
+const reduceMotion = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const state = loadState();
 
@@ -36,6 +41,7 @@ const teamBInput = document.querySelector("#team-b");
 const teamALabel = document.querySelector("#team-a-label");
 const teamBLabel = document.querySelector("#team-b-label");
 const geminiOutput = document.querySelector("#gemini-output");
+const srStatus = document.querySelector("#sr-status");
 const canvas = document.querySelector("#court");
 const ctx = canvas.getContext("2d");
 
@@ -53,14 +59,102 @@ function defaultState() {
 
 function loadState() {
   try {
-    return { ...defaultState(), ...JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") };
+    return normalizeState(JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"));
   } catch {
     return defaultState();
   }
 }
 
+function asText(value, fallback = "") {
+  return typeof value === "string" ? value : fallback;
+}
+
+function asNumber(value, fallback = 0) {
+  const number = Number(value);
+  return typeof value !== "boolean" && value !== null && value !== "" && Number.isFinite(number) ? number : fallback;
+}
+
+function asList(value) {
+  return Array.isArray(value) ? value.filter((item) => item && typeof item === "object") : [];
+}
+
+// Saved data is untrusted: an older version, a hand edit, or another script on the origin may have written it.
+// Keep every valid field, drop or reset anything with the wrong shape so render() can never crash on it.
+function normalizeState(raw) {
+  const clean = defaultState();
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return clean;
+  const game = raw.game && typeof raw.game === "object" ? raw.game : {};
+  clean.game.teamA = asText(game.teamA).trim() || clean.game.teamA;
+  clean.game.teamB = asText(game.teamB).trim() || clean.game.teamB;
+  clean.takes = asList(raw.takes)
+    .filter((take) => asText(take.text).trim())
+    .map((take) => ({
+      id: asText(take.id) || makeId("take"),
+      text: take.text.trim(),
+      tag: asText(take.tag, "Team take"),
+      confidence: asText(take.confidence, "Casual"),
+      result: Object.hasOwn(resultLabels, take.result) ? take.result : "pending",
+      createdAt: asText(take.createdAt)
+    }));
+  clean.quarters = asList(raw.quarters)
+    .filter((quarter) => [1, 2, 3, 4].includes(quarter.quarter))
+    .map((quarter) => ({
+      quarter: quarter.quarter,
+      aPoints: asNumber(quarter.aPoints),
+      bPoints: asNumber(quarter.bPoints),
+      aFg: asNumber(quarter.aFg),
+      bFg: asNumber(quarter.bFg),
+      aTurnovers: asNumber(quarter.aTurnovers),
+      bTurnovers: asNumber(quarter.bTurnovers)
+    }));
+  clean.modelCalls = asList(raw.modelCalls)
+    .filter((call) => [1, 2, 3].includes(call.quarter))
+    .map((call) => {
+      const out = {
+        id: asText(call.id) || makeId("model"),
+        quarter: call.quarter,
+        nextMargin: asNumber(call.nextMargin),
+        projectedNextScore: asText(call.projectedNextScore),
+        projectedFinalMargin: asNumber(call.projectedFinalMargin),
+        reasoning: Array.isArray(call.reasoning) ? call.reasoning.filter((line) => typeof line === "string") : [],
+        nextGrade: MODEL_GRADES.includes(call.nextGrade) ? call.nextGrade : "pending",
+        finalGrade: MODEL_GRADES.includes(call.finalGrade) ? call.finalGrade : "pending",
+        createdAt: asText(call.createdAt)
+      };
+      ["nextReceipt", "finalReceipt"].forEach((key) => {
+        if (typeof call[key] === "string") out[key] = call[key];
+      });
+      ["actualNextMargin", "actualFinalMargin"].forEach((key) => {
+        if (Number.isFinite(call[key])) out[key] = call[key];
+      });
+      return out;
+    });
+  clean.geminiReadback = asText(raw.geminiReadback);
+  return clean;
+}
+
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  // Private browsing, a full quota, or blocked site data make setItem throw. Keep the app working and say so.
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    storageFailed = false;
+  } catch {
+    storageFailed = true;
+  }
+}
+
+function announce(message) {
+  if (!srStatus) return;
+  srStatus.textContent = "";
+  setTimeout(() => { srStatus.textContent = message; }, 50);
+}
+
+function flashButton(button, message) {
+  const original = button.dataset.label || button.textContent;
+  button.dataset.label = original;
+  button.textContent = message;
+  announce(message);
+  setTimeout(() => { button.textContent = original; }, 1600);
 }
 
 function escapeHtml(value) {
@@ -177,6 +271,7 @@ function renderSummary() {
     if (stats.biggestHit) lines.push(`Best receipt so far: "${stats.biggestHit.text}" (${resultLabels[stats.biggestHit.result]}).`);
     if (state.modelCalls.length) lines.push(`${state.modelCalls.length} readable model call${state.modelCalls.length === 1 ? "" : "s"}, ${modelGraded} graded by later game data.`);
   }
+  if (storageFailed) lines.push("This browser is not saving receipts right now, so they will be gone after a reload. Use Export JSON to keep a copy.");
 
   lines.forEach((line) => {
     const item = document.createElement("li");
@@ -189,7 +284,7 @@ function renderTakes() {
   takeList.innerHTML = "";
   state.takes.forEach((take) => {
     const item = document.createElement("li");
-    item.className = `entry ${take.result}`;
+    item.className = `entry ${take.result}`; // result is one of resultLabels' keys (normalizeState)
     item.innerHTML = `
       <header>
         <div>
@@ -198,9 +293,9 @@ function renderTakes() {
         </div>
         <span class="chip">${resultLabels[take.result]}</span>
       </header>
-      <div class="result-row" data-id="${take.id}">
+      <div class="result-row" data-id="${escapeHtml(take.id)}" role="group" aria-label="Grade this take">
         ${Object.entries(resultLabels).map(([value, label]) => `
-          <button class="${take.result === value ? "active" : ""}" type="button" data-result="${value}">${label}</button>
+          <button class="${take.result === value ? "active" : ""}" type="button" data-result="${value}" aria-pressed="${take.result === value}">${label}</button>
         `).join("")}
       </div>
     `;
@@ -237,6 +332,21 @@ function renderLabels() {
   teamBInput.value = state.game.teamB;
   teamALabel.textContent = state.game.teamA;
   teamBLabel.textContent = state.game.teamB;
+  // Each stat input needs its own accessible name; the visible row label alone does not say which team it is.
+  [["a", state.game.teamA], ["b", state.game.teamB]].forEach(([side, team]) => {
+    document.querySelector(`#${side}-points`).setAttribute("aria-label", `${team} quarter points`);
+    document.querySelector(`#${side}-fg`).setAttribute("aria-label", `${team} FG%`);
+    document.querySelector(`#${side}-turnovers`).setAttribute("aria-label", `${team} turnovers`);
+  });
+}
+
+function describeCourt() {
+  if (!state.takes.length && !state.modelCalls.length) return "Basketball receipt map: no receipts yet.";
+  const counts = Object.entries(resultLabels)
+    .map(([key, label]) => [label, state.takes.filter((take) => take.result === key).length])
+    .filter(([, count]) => count)
+    .map(([label, count]) => `${count} ${label.toLowerCase()}`);
+  return `Basketball receipt map: ${state.takes.length} take${state.takes.length === 1 ? "" : "s"} (${counts.join(", ")}) and ${state.modelCalls.length} model call${state.modelCalls.length === 1 ? "" : "s"}.`;
 }
 
 function render() {
@@ -247,7 +357,10 @@ function render() {
   renderModelCalls();
   renderGeminiReadback();
   emptyState.hidden = state.takes.length > 0 || state.modelCalls.length > 0;
+  canvas.setAttribute("aria-label", describeCourt());
   saveState();
+  if (storageFailed) renderSummary();
+  if (reduceMotion) drawCourt();
 }
 
 function renderGeminiReadback() {
@@ -272,7 +385,7 @@ function positionFor(index) {
 function drawCourt() {
   const width = canvas.width;
   const height = canvas.height;
-  pulse = (pulse + 0.022) % (Math.PI * 2);
+  if (!reduceMotion) pulse = (pulse + 0.022) % (Math.PI * 2);
 
   ctx.clearRect(0, 0, width, height);
   const wood = ctx.createLinearGradient(0, 0, width, height);
@@ -324,8 +437,11 @@ function drawCourt() {
     ctx.fillText("Call it before the game scores it.", width / 2, height / 2);
     ctx.textAlign = "left";
   }
+}
 
-  requestAnimationFrame(drawCourt);
+function animateCourt() {
+  drawCourt();
+  if (!reduceMotion) requestAnimationFrame(animateCourt);
 }
 
 function drawHoop(x, y, direction) {
@@ -384,7 +500,7 @@ function buildReceiptCard() {
     y += 50;
     c.fillStyle = "#f5efe5";
     c.font = "650 34px system-ui, sans-serif";
-    wrapText(c, `"${stats.biggestHit.text}"`, 80, y, 900, 44);
+    wrapText(c, `"${stats.biggestHit.text}"`, 80, y, 900, 44, 3);
   }
 
   const gradedModel = state.modelCalls.find((call) => call.nextReceipt || call.finalReceipt);
@@ -394,14 +510,14 @@ function buildReceiptCard() {
     c.fillText("GEMINI READBACK", 80, 850);
     c.fillStyle = "#f5efe5";
     c.font = "650 28px system-ui, sans-serif";
-    wrapText(c, state.geminiReadback, 80, 900, 900, 36);
+    wrapText(c, state.geminiReadback, 80, 900, 900, 36, 3);
   } else if (gradedModel) {
     c.fillStyle = "#f2b84b";
     c.font = "800 28px system-ui, sans-serif";
     c.fillText("MODEL RECEIPT", 80, 900);
     c.fillStyle = "#f5efe5";
     c.font = "650 30px system-ui, sans-serif";
-    wrapText(c, gradedModel.finalReceipt || gradedModel.nextReceipt, 80, 950, 900, 40);
+    wrapText(c, gradedModel.finalReceipt || gradedModel.nextReceipt, 80, 950, 900, 40, 2);
   }
 
   c.fillStyle = "#aeb6bd";
@@ -410,27 +526,39 @@ function buildReceiptCard() {
   return card;
 }
 
-function wrapText(c, text, x, y, maxWidth, lineHeight) {
-  const words = String(text).split(" ");
+// maxLines keeps long text (a Gemini readback, a 150-character take) from running into the footer or off the card.
+function wrapText(c, text, x, y, maxWidth, lineHeight, maxLines = Infinity) {
+  const words = String(text).split(/\s+/).filter(Boolean);
+  const lines = [];
   let line = "";
   words.forEach((word) => {
     const attempt = line ? `${line} ${word}` : word;
     if (c.measureText(attempt).width > maxWidth && line) {
-      c.fillText(line, x, y);
+      lines.push(line);
       line = word;
-      y += lineHeight;
     } else {
       line = attempt;
     }
   });
-  if (line) c.fillText(line, x, y);
-  return y;
+  if (line) lines.push(line);
+  if (lines.length > maxLines) {
+    lines.length = maxLines;
+    let last = lines[maxLines - 1];
+    while (last && c.measureText(`${last}...`).width > maxWidth) last = last.split(" ").slice(0, -1).join(" ");
+    lines[maxLines - 1] = `${last}...`;
+  }
+  lines.forEach((text, index) => c.fillText(text, x, y + index * lineHeight));
+  return y + Math.max(0, lines.length - 1) * lineHeight;
 }
 
 function downloadReceiptCard() {
   if (!state.takes.length && !state.modelCalls.length) return;
   const card = buildReceiptCard();
   card.toBlob((blob) => {
+    if (!blob) {
+      announce("Could not create the receipt card image in this browser.");
+      return;
+    }
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = "clutch-receipts-card.png";
@@ -442,13 +570,20 @@ function downloadReceiptCard() {
 async function copyText(text) {
   try {
     await navigator.clipboard.writeText(text);
+    return true;
   } catch {
     const area = document.createElement("textarea");
     area.value = text;
     document.body.appendChild(area);
     area.select();
-    document.execCommand("copy");
+    let copied = false;
+    try {
+      copied = document.execCommand("copy");
+    } catch {
+      copied = false;
+    }
     area.remove();
+    return copied;
   }
 }
 
@@ -494,8 +629,23 @@ function extractGeminiText(payload) {
 }
 
 async function generateGeminiReadback(apiKey) {
+  // Without a timeout a stalled request leaves the button disabled on "Reading receipts..." forever.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+  try {
+    return await requestGeminiReadback(apiKey, controller.signal);
+  } catch (error) {
+    if (error.name === "AbortError") throw new Error(`no answer from Gemini after ${GEMINI_TIMEOUT_MS / 1000} seconds.`);
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function requestGeminiReadback(apiKey, signal) {
   const response = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
     method: "POST",
+    signal,
     headers: {
       "Content-Type": "application/json",
       "x-goog-api-key": apiKey
@@ -517,7 +667,7 @@ async function generateGeminiReadback(apiKey) {
   }
 
   const payload = await response.json();
-  const text = extractGeminiText(payload);
+  const text = extractGeminiText(payload || {});
   if (!text) throw new Error("Gemini returned no text.");
   return text;
 }
@@ -533,9 +683,16 @@ gameForm.addEventListener("submit", (event) => {
 takeForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const data = new FormData(takeForm);
+  const text = data.get("take").trim();
+  if (!text) { // "required" accepts whitespace-only input; an empty take is not a take
+    const field = takeForm.querySelector("#take-text");
+    field.value = "";
+    takeForm.reportValidity();
+    return;
+  }
   state.takes.unshift({
     id: makeId("take"),
-    text: data.get("take").trim(),
+    text,
     tag: data.get("tag"),
     confidence: data.get("confidence"),
     result: "pending",
@@ -613,7 +770,12 @@ takeList.addEventListener("click", (event) => {
   render();
 });
 
+function hasReceipts() {
+  return state.takes.length > 0 || state.modelCalls.length > 0;
+}
+
 document.querySelector("#seed-button").addEventListener("click", () => {
+  if (hasReceipts() && !confirm("Replace your receipts with the sample NBA night? Your current receipts will be lost.")) return;
   Object.assign(state, {
     game: { teamA: "Celtics", teamB: "Lakers" },
     takes: [
@@ -644,21 +806,25 @@ document.querySelector("#seed-button").addEventListener("click", () => {
 });
 
 document.querySelector("#clear-button").addEventListener("click", () => {
+  if (hasReceipts() && !confirm("Clear every take and model call? This cannot be undone.")) return;
   Object.assign(state, defaultState());
   render();
+  announce("Receipts cleared.");
 });
 
-document.querySelector("#export-button").addEventListener("click", async () => {
-  await copyText(JSON.stringify(state, null, 2));
+document.querySelector("#export-button").addEventListener("click", async (event) => {
+  const button = event.currentTarget;
+  flashButton(button, (await copyText(JSON.stringify(state, null, 2))) ? "Copied JSON" : "Copy failed");
 });
 
-document.querySelector("#copy-summary").addEventListener("click", async () => {
+document.querySelector("#copy-summary").addEventListener("click", async (event) => {
+  const button = event.currentTarget;
   const stats = receiptStats();
   const summary = `Clutch Receipts: ${state.game.teamA} vs ${state.game.teamB}. ${state.takes.length} takes, ${stats.hitScore}% hit rate, ${state.modelCalls.length} readable model calls.`;
-  await copyText(summary);
+  flashButton(button, (await copyText(summary)) ? "Copied" : "Copy failed");
 });
 
 document.querySelector("#card-button").addEventListener("click", downloadReceiptCard);
 
 render();
-drawCourt();
+animateCourt();
